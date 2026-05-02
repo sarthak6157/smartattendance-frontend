@@ -1710,7 +1710,6 @@ const API = (() => {
   };
 
   return {
-    _base,
     base,
     get:    (path)         => fetch(`${base}${path}`, { headers: headers() }).then(handle),
     post:   (path, body)   => fetch(`${base}${path}`, { method:'POST',   headers: headers(), body: JSON.stringify(body) }).then(handle),
@@ -1721,7 +1720,7 @@ const API = (() => {
 
 /* =========================== STATE =========================== */
 let currentUser = null;
-let loginRole   = 'student';
+var loginRole   = 'student';  // var (not let) so setLoginRole can access it before declaration
 let qrInterval  = null;
 let camStream   = null;
 let scanState   = {};
