@@ -1710,6 +1710,8 @@ const API = (() => {
   };
 
   return {
+    _base,
+    base,
     get:    (path)         => fetch(`${base}${path}`, { headers: headers() }).then(handle),
     post:   (path, body)   => fetch(`${base}${path}`, { method:'POST',   headers: headers(), body: JSON.stringify(body) }).then(handle),
     patch:  (path, body)   => fetch(`${base}${path}`, { method:'PATCH',  headers: headers(), body: JSON.stringify(body) }).then(handle),
@@ -1832,7 +1834,7 @@ function routeUser(user) {
 
 /* Branch options per course */
 const BRANCH_MAP = {
-  'B.Tech': ['CSE (Computer Science & Engineering)','CSE (AI-ML-DL)','CSE (IBM)','ECE (Electronics & Communication)','ME (Mechanical Engineering)','Civil Engineering','EE (Electrical Engineering)','IT (Information Technology)','Chemical Engineering','Biotechnology','Aerospace Engineering'],
+  'B.Tech': ['CSE (Computer Science & Engineering)','ECE (Electronics & Communication)','ME (Mechanical Engineering)','Civil Engineering','EE (Electrical Engineering)','IT (Information Technology)','Chemical Engineering','Biotechnology','Aerospace Engineering'],
   'B.E':    ['CSE','ECE','ME','Civil','EE','IT','Chemical','Biotechnology'],
   'BCA':    ['BCA (General)','BCA with Data Science','BCA with Cybersecurity'],
   'MCA':    ['MCA (General)','MCA with AI/ML','MCA with Cloud Computing'],
@@ -2067,6 +2069,7 @@ async function renderUserMgmt(c) {
       <h2><i class="fa-solid fa-users" style="color:var(--accent);"></i> User Management</h2>
       <div class="btn-group">
         <button class="btn btn-accent" onclick="openModal('addUserModal')"><i class="fa-solid fa-user-plus"></i> Add User</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('bulkImportModal')"><i class="fa-solid fa-file-csv"></i> Bulk Import</button>
         <button class="btn btn-outline btn-sm" onclick="printPage()"><i class="fa-solid fa-print"></i> Print</button>
         <button class="btn btn-success btn-sm" onclick="exportUsersCSV()"><i class="fa-solid fa-download"></i> CSV</button>
       </div>
@@ -2809,6 +2812,7 @@ async function renderReports(c) {
         <div class="btn-group">
           <button class="btn btn-outline btn-sm" onclick="printPage()"><i class="fa-solid fa-print"></i> Print</button>
           <button class="btn btn-success btn-sm" onclick="exportReportsCSV()"><i class="fa-solid fa-download"></i> Export CSV</button>
+          <button class="btn btn-primary btn-sm" onclick="showSectionInsights('','')"><i class="fa-solid fa-brain"></i> AI Insights</button>
         </div>
       </div>
     <div class="card">
@@ -3511,7 +3515,13 @@ async function renderFacAttendance(c) {
   cachedCourses = Array.isArray(courses)?courses:[];
   const ss = sessions.sessions||[];
   c.innerHTML = `
-    <div class="page-header"><h2><i class="fa-solid fa-clipboard-list" style="color:var(--accent);"></i> Attendance Sheet</h2></div>
+    <div class="page-header">
+      <h2><i class="fa-solid fa-clipboard-list" style="color:var(--accent);"></i> Attendance Sheet</h2>
+      <div class="btn-group" id="exportBtnGroup" style="display:none;">
+        <button class="btn btn-success btn-sm" onclick="exportSessionExcel()"><i class="fa-solid fa-file-excel"></i> Excel</button>
+        <button class="btn btn-outline btn-sm" onclick="exportSessionCSV()"><i class="fa-solid fa-file-csv"></i> CSV</button>
+      </div>
+    </div>
     <div class="card" style="margin-bottom:16px;">
       <label class="form-label">Select Session</label>
       <select class="form-control form-select" id="attSessionSel" onchange="loadAttSheet()" style="max-width:450px;">
@@ -3531,6 +3541,10 @@ async function loadAttSheet() {
   const sid = parseInt(sel?.value);
   const wrap = document.getElementById('attSheetWrap');
   const infoBadge = document.getElementById('sessionInfoBadge');
+  // Show/hide export buttons
+  const exportBtns = document.getElementById('exportBtnGroup');
+  if (exportBtns) exportBtns.style.display = sid ? 'flex' : 'none';
+  window._currentAttSessionId = sid;
   if (!wrap || !sid) return;
 
   // Get branch + section from the selected option's data attributes
@@ -4527,10 +4541,11 @@ function unblockStep(n) {
 async function renderStuHistory(c) {
   const branch  = currentUser.branch  || currentUser.department || '';
   const section = currentUser.section || '';
-  const [attData, sessions, courses] = await Promise.all([
+  const [attData, sessions, courses, insights] = await Promise.all([
     API.get(`/attendance/student/${currentUser.id}?limit=500`).catch(()=>({records:[]})),
     API.get(`/sessions?limit=200&branch=${encodeURIComponent(branch)}&section=${encodeURIComponent(section)}`).catch(()=>({sessions:[]})),
     API.get('/courses').catch(()=>[]),
+    API.get(`/attendance/insights/student/${currentUser.id}`).catch(()=>null),
   ]);
   const att    = attData.records||[];
   const ss     = sessions.sessions||[];
@@ -4538,13 +4553,56 @@ async function renderStuHistory(c) {
   const closed = ss.filter(s=>s.status==='closed');
   const present= att.filter(a=>a.status==='present').length;
   const p      = pct(present, closed.length);
-  c.innerHTML  = `
-    <div class="page-header"><h2><i class="fa-solid fa-history" style="color:var(--accent);"></i> Attendance History</h2></div>
+
+  // AI Insights HTML
+  let insightsHtml = '';
+  if (insights) {
+    const alertColors = { success:'#d1fae5', warning:'#fef3c7', danger:'#fee2e2' };
+    const alertTextColors = { success:'#065f46', warning:'#92400e', danger:'#991b1b' };
+    insightsHtml = `
+    <div class="card" style="margin-bottom:16px;">
+      <div class="section-title"><i class="fa-solid fa-brain" style="color:var(--accent);"></i> AI Insights</div>
+      ${insights.insights.map(ins=>`
+        <div style="padding:10px 14px;border-radius:8px;background:${alertColors[ins.type]};color:${alertTextColors[ins.type]};margin-bottom:8px;font-size:.85rem;">
+          <i class="fa-solid fa-${ins.type==='success'?'circle-check':ins.type==='warning'?'triangle-exclamation':'circle-xmark'}"></i>
+          ${ins.message}
+        </div>`).join('')}
+      ${insights.overall.classes_needed_for_75 > 0 ? `
+        <div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:8px;font-size:.85rem;">
+          <i class="fa-solid fa-calculator" style="color:var(--primary);"></i>
+          <strong>Need ${insights.overall.classes_needed_for_75} more consecutive classes</strong> to reach 75%
+        </div>` : ''}
+      <div style="margin-top:12px;">
+        <div style="font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:8px;">Subject-wise breakdown:</div>
+        ${insights.courses_breakdown.map(cb=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
+            <div style="flex:1;font-size:.83rem;">${cb.course_name}</div>
+            <div style="min-width:80px;">
+              <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+                <div style="height:100%;width:${cb.percentage}%;background:${cb.status==='safe'?'#2d9e6b':cb.status==='warning'?'#f08e1b':'#e63946'};border-radius:3px;"></div>
+              </div>
+            </div>
+            <span style="font-size:.82rem;font-weight:600;color:${cb.status==='safe'?'#065f46':cb.status==='warning'?'#92400e':'#991b1b'};min-width:40px;text-align:right;">${cb.percentage}%</span>
+            <span style="font-size:.75rem;color:var(--muted);">${cb.present}/${cb.total}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  c.innerHTML = `
+    <div class="page-header">
+      <h2><i class="fa-solid fa-history" style="color:var(--accent);"></i> Attendance History</h2>
+      <div class="btn-group">
+        <button class="btn btn-success btn-sm" onclick="exportStudentExcel()"><i class="fa-solid fa-file-excel"></i> Excel</button>
+        <button class="btn btn-outline btn-sm" onclick="exportStudentCSV()"><i class="fa-solid fa-file-csv"></i> CSV</button>
+      </div>
+    </div>
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-icon" style="background:#d1fae5;"><i class="fa-solid fa-user-check" style="color:#065f46;"></i></div><div><div class="stat-val">${present}</div><div class="stat-lbl">Present</div></div></div>
       <div class="stat-card"><div class="stat-icon" style="background:#fee2e2;"><i class="fa-solid fa-user-xmark" style="color:#991b1b;"></i></div><div><div class="stat-val">${closed.length-present}</div><div class="stat-lbl">Absent</div></div></div>
       <div class="stat-card"><div class="stat-icon" style="background:${p>=75?'#d1fae5':'#fee2e2'};"><i class="fa-solid fa-percent" style="color:${p>=75?'#065f46':'#991b1b'};"></i></div><div><div class="stat-val" style="color:${p>=75?'var(--success)':'var(--accent2)'};">${p}%</div><div class="stat-lbl">Overall %</div></div></div>
     </div>
+    ${insightsHtml}
     <div class="card">
       <div style="margin-bottom:16px;">
         <div class="pct-bar" style="height:14px;"><div class="pct-bar-fill ${p<75?p<50?'danger':'warn':''}" style="width:${p}%;"></div></div>
@@ -4566,6 +4624,35 @@ async function renderStuHistory(c) {
           }).join('')}</tbody>
         </table></div>`}
     </div>`;
+}
+
+async function exportStudentExcel() {
+  try {
+    const url = `${API.base}/attendance/export/student/${currentUser.id}?format=excel`;
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sas_token')}` } });
+    if (!res.ok) throw new Error('Export failed');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `attendance_${currentUser.inst_id}.xlsx`;
+    a.click();
+    toast('Excel downloaded!', 'success');
+  } catch(e) { toast('Export failed: ' + e.message, 'error'); }
+}
+
+async function exportStudentCSV() {
+  try {
+    const url = `${API.base}/attendance/export/student/${currentUser.id}?format=csv`;
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sas_token')}` } });
+    if (!res.ok) throw new Error('Export failed');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `attendance_${currentUser.inst_id}.csv`;
+    a.click();
+    toast('CSV downloaded!', 'success');
+  } catch(e) { toast('Export failed: ' + e.message, 'error'); }
+}
 }
 
 /* =========================== SHARED PROFILE =========================== */
@@ -4790,10 +4877,308 @@ function proceedToPortal() {
 }
 
 // Pre-load face-api models in background after page load
+/* ═══════════════════════════ BULK IMPORT ═══════════════════════════ */
+let _csvFile = null;
+
+function downloadImportTemplate() {
+  window.open(`${API._base}/users/bulk-import/template`, '_blank');
+}
+
+function handleCSVSelect(event) {
+  const file = event.target.files[0];
+  if (file) setCSVFile(file);
+}
+
+function handleCSVDrop(event) {
+  event.preventDefault();
+  document.getElementById('dropZone').style.borderColor = 'var(--border)';
+  const file = event.dataTransfer.files[0];
+  if (file && file.name.endsWith('.csv')) setCSVFile(file);
+  else toast('Please drop a .csv file', 'warning');
+}
+
+function setCSVFile(file) {
+  _csvFile = file;
+  document.getElementById('csvFileName').innerHTML =
+    `<i class="fa-solid fa-file-csv" style="color:var(--success);"></i> <strong>${file.name}</strong> (${(file.size/1024).toFixed(1)} KB)`;
+  document.getElementById('importBtn').disabled = false;
+  document.getElementById('dropZone').style.borderColor = 'var(--success)';
+  document.getElementById('importResults').style.display = 'none';
+}
+
+async function doImport() {
+  if (!_csvFile) { toast('Please select a CSV file', 'warning'); return; }
+  const btn = document.getElementById('importBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Importing...';
+  try {
+    const formData = new FormData();
+    formData.append('file', _csvFile);
+    const token = localStorage.getItem('sas_token');
+    const res = await fetch(`${API._base}/users/bulk-import`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Import failed');
+    showImportResults(data);
+    toast(`Import done! ${data.summary.created} students added.`, 'success');
+    await loadUsersTable();
+  } catch(e) {
+    toast(e.message || 'Import failed', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-upload"></i> Import Students';
+  }
+}
+
+function showImportResults(data) {
+  const { summary, skipped, errors } = data;
+  const resultEl = document.getElementById('importResults');
+  resultEl.style.display = 'block';
+  resultEl.style.background = 'var(--bg)';
+  resultEl.style.border = '1px solid var(--border)';
+  resultEl.innerHTML = `
+    <div style="font-weight:700;font-size:.9rem;margin-bottom:10px;">Import Results</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+      <span style="background:#d1fae5;color:#065f46;border-radius:20px;padding:4px 14px;font-size:.82rem;font-weight:600;">
+        <i class="fa-solid fa-check"></i> ${summary.created} Created
+      </span>
+      <span style="background:#fef3c7;color:#92400e;border-radius:20px;padding:4px 14px;font-size:.82rem;font-weight:600;">
+        <i class="fa-solid fa-skip-forward"></i> ${summary.skipped} Skipped
+      </span>
+      ${summary.errors ? `<span style="background:#fee2e2;color:#991b1b;border-radius:20px;padding:4px 14px;font-size:.82rem;font-weight:600;">
+        <i class="fa-solid fa-xmark"></i> ${summary.errors} Errors
+      </span>` : ''}
+    </div>
+    ${skipped.length ? `
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px;">Skipped (already exist):</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px;">${skipped.map(s=>`Row ${s.row}: ${s.inst_id}`).join(', ')}</div>
+    ` : ''}
+    ${errors.length ? `
+      <div style="font-size:.78rem;color:var(--accent2);margin-bottom:4px;">Errors:</div>
+      ${errors.map(e=>`<div style="font-size:.78rem;color:var(--accent2);">Row ${e.row}: ${e.reason} (${e.data})</div>`).join('')}
+    ` : ''}`;
+}
+
+function resetImportModal() {
+  _csvFile = null;
+  const inp = document.getElementById('csvFileInput');
+  if (inp) inp.value = '';
+  const fn = document.getElementById('csvFileName');
+  if (fn) fn.innerHTML = '';
+  const dz = document.getElementById('dropZone');
+  if (dz) dz.style.borderColor = 'var(--border)';
+  const btn = document.getElementById('importBtn');
+  if (btn) btn.disabled = true;
+  const res = document.getElementById('importResults');
+  if (res) res.style.display = 'none';
+}
+
 window.addEventListener('load', () => {
   setTimeout(() => loadFaceApiModels().catch(()=>{}), 3000);
+  // Setup push notifications
+  setupPushNotifications();
 });
 
+// ── Excel/CSV Export helpers ──────────────────────────────────────────────────
+async function exportSessionExcel() {
+  const sid = window._currentAttSessionId;
+  if (!sid) { toast('Select a session first', 'warning'); return; }
+  try {
+    const res = await fetch(`${API.base}/attendance/export/session/${sid}?format=excel`,
+      { headers: { 'Authorization': `Bearer ${localStorage.getItem('sas_token')}` } });
+    if (!res.ok) throw new Error('Export failed');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `attendance_session_${sid}.xlsx`;
+    a.click();
+    toast('Excel downloaded!', 'success');
+  } catch(e) { toast('Export failed: ' + e.message, 'error'); }
+}
+
+async function exportSessionCSV() {
+  const sid = window._currentAttSessionId;
+  if (!sid) { toast('Select a session first', 'warning'); return; }
+  try {
+    const res = await fetch(`${API.base}/attendance/export/session/${sid}?format=csv`,
+      { headers: { 'Authorization': `Bearer ${localStorage.getItem('sas_token')}` } });
+    if (!res.ok) throw new Error('Export failed');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `attendance_session_${sid}.csv`;
+    a.click();
+    toast('CSV downloaded!', 'success');
+  } catch(e) { toast('Export failed: ' + e.message, 'error'); }
+}
+
+// ── Push Notification Setup ───────────────────────────────────────────────────
+async function setupPushNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    // Check if VAPID is configured
+    const vapidData = await API.get('/notifications/push/vapid-public-key').catch(()=>null);
+    if (!vapidData?.enabled || !vapidData?.vapid_public_key) return;
+
+    // Register service worker
+    const reg = await navigator.serviceWorker.register('/sw.js').catch(()=>null);
+    if (!reg) return;
+
+    // Check existing subscription
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) return; // already subscribed
+
+    // Request permission
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    // Subscribe
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidData.vapid_public_key),
+    });
+
+    // Save to backend
+    await API.post('/notifications/push/subscribe', {
+      endpoint: sub.endpoint,
+      keys: {
+        p256dh: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')))),
+        auth:   btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth')))),
+      }
+    });
+    toast('Push notifications enabled!', 'success');
+  } catch(e) {
+    console.log('Push setup skipped:', e.message);
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+}
+
+// ── AI Insights for Admin/Faculty ─────────────────────────────────────────────
+async function showSectionInsights(branch, section) {
+  const data = await API.get(`/attendance/insights/section?branch=${encodeURIComponent(branch||'')}&section=${encodeURIComponent(section||'')}`).catch(()=>null);
+  if (!data) { toast('Could not load insights', 'error'); return; }
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay show';
+  modal.style.zIndex = '500';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:700px;">
+      <h3><i class="fa-solid fa-brain" style="color:var(--accent);"></i> AI Section Insights — ${branch} ${section?'Sec '+section:''}</h3>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+        <div class="stat-card"><div class="stat-icon" style="background:#d1fae5;"><i class="fa-solid fa-users" style="color:#065f46;"></i></div><div><div class="stat-val">${data.section_summary.safe_count}</div><div class="stat-lbl">Safe (75%+)</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#fef3c7;"><i class="fa-solid fa-triangle-exclamation" style="color:#92400e;"></i></div><div><div class="stat-val">${data.section_summary.at_risk_count}</div><div class="stat-lbl">At Risk</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#fee2e2;"><i class="fa-solid fa-circle-xmark" style="color:#991b1b;"></i></div><div><div class="stat-val">${data.section_summary.critical_count}</div><div class="stat-lbl">Critical</div></div></div>
+      </div>
+      ${data.critical_students.length ? `
+        <div style="margin-bottom:12px;">
+          <div style="font-weight:700;font-size:.9rem;color:#991b1b;margin-bottom:8px;"><i class="fa-solid fa-circle-xmark"></i> Critical Students (below 60%)</div>
+          ${data.critical_students.map(s=>`
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.85rem;">
+              <span>${s.name} <code style="font-size:.75rem;">${s.inst_id}</code></span>
+              <span style="color:#991b1b;font-weight:600;">${s.percentage}% (${s.present}/${s.total})</span>
+            </div>`).join('')}
+        </div>` : ''}
+      ${data.at_risk_students.length ? `
+        <div>
+          <div style="font-weight:700;font-size:.9rem;color:#92400e;margin-bottom:8px;"><i class="fa-solid fa-triangle-exclamation"></i> At Risk (60-74%)</div>
+          ${data.at_risk_students.map(s=>`
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.85rem;">
+              <span>${s.name} <code style="font-size:.75rem;">${s.inst_id}</code></span>
+              <span style="color:#92400e;font-weight:600;">${s.percentage}% (${s.present}/${s.total})</span>
+            </div>`).join('')}
+        </div>` : ''}
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Close</button>
+        <button class="btn btn-accent" onclick="sendLowAttendanceAlert('${branch}','${section}')">
+          <i class="fa-solid fa-envelope"></i> Email Warning to At-Risk
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+}
+
+async function sendLowAttendanceAlert(branch, section) {
+  if (!confirm(`Send attendance warning emails to all students below 75% in ${branch} ${section}?`)) return;
+  try {
+    const data = await API.post(`/notifications/email/low-attendance?branch=${encodeURIComponent(branch)}&section=${encodeURIComponent(section)}&threshold=75`);
+    toast(`Sent ${data.sent} warning emails!`, 'success');
+  } catch(e) { toast(e.message || 'Failed to send emails', 'error'); }
+}
+
+
+
 </script>
+<!-- ═══════════════ BULK IMPORT MODAL ═══════════════ -->
+<div class="modal-overlay" id="bulkImportModal">
+  <div class="modal-box" style="max-width:580px;">
+    <h3><i class="fa-solid fa-file-csv" style="color:var(--accent);"></i> Bulk Import Students</h3>
+
+    <!-- Step 1: Download template -->
+    <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:.78rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;">
+        <i class="fa-solid fa-1"></i> Download Template First
+      </div>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px;">
+        Download the CSV template, fill in student details, then upload below.
+      </p>
+      <button class="btn btn-outline btn-sm" onclick="downloadImportTemplate()">
+        <i class="fa-solid fa-download"></i> Download CSV Template
+      </button>
+    </div>
+
+    <!-- CSV Format info -->
+    <div style="background:#f0f7ff;border-radius:8px;padding:12px;margin-bottom:14px;border:1px solid #dbeafe;">
+      <div style="font-size:.75rem;font-weight:700;color:var(--primary);margin-bottom:6px;">Required CSV columns:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        <span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:2px 8px;font-size:.75rem;font-family:monospace;">full_name</span>
+        <span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:2px 8px;font-size:.75rem;font-family:monospace;">inst_id</span>
+        <span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:2px 8px;font-size:.75rem;font-family:monospace;">email</span>
+        <span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:2px 8px;font-size:.75rem;font-family:monospace;">password</span>
+        <span style="background:#f3f4f6;color:#374151;border-radius:4px;padding:2px 8px;font-size:.75rem;font-family:monospace;">branch (opt)</span>
+        <span style="background:#f3f4f6;color:#374151;border-radius:4px;padding:2px 8px;font-size:.75rem;font-family:monospace;">section (opt)</span>
+        <span style="background:#f3f4f6;color:#374151;border-radius:4px;padding:2px 8px;font-size:.75rem;font-family:monospace;">semester (opt)</span>
+      </div>
+    </div>
+
+    <!-- Step 2: Upload -->
+    <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:.78rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;">
+        <i class="fa-solid fa-2"></i> Upload Filled CSV
+      </div>
+      <div id="dropZone" style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:.15s;"
+        onclick="document.getElementById('csvFileInput').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--primary)'"
+        ondragleave="this.style.borderColor='var(--border)'"
+        ondrop="handleCSVDrop(event)">
+        <i class="fa-solid fa-cloud-arrow-up" style="font-size:1.8rem;color:var(--muted);margin-bottom:8px;display:block;"></i>
+        <div style="font-size:.88rem;color:var(--text);font-weight:600;">Click to select or drag & drop CSV</div>
+        <div style="font-size:.78rem;color:var(--muted);margin-top:4px;">Only .csv files supported</div>
+      </div>
+      <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="handleCSVSelect(event)">
+      <div id="csvFileName" style="margin-top:8px;font-size:.82rem;color:var(--muted);text-align:center;"></div>
+    </div>
+
+    <!-- Results -->
+    <div id="importResults" style="display:none;border-radius:10px;padding:14px;margin-bottom:14px;"></div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('bulkImportModal');resetImportModal()">Close</button>
+      <button class="btn btn-accent" id="importBtn" onclick="doImport()" disabled>
+        <i class="fa-solid fa-upload"></i> Import Students
+      </button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
