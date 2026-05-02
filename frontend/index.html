@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -4060,11 +4060,13 @@ async function renderStuTimetable(c) {
       <div class="card" style="text-align:center;">
         <div class="empty-state">
           <i class="fa-solid fa-calendar-xmark"></i>
-          <p>No timetable slots found.</p>
-          <p style="font-size:.82rem;color:var(--muted);">
-            ${branch ? 'Branch: <strong>'+branch+'</strong>' : '<strong>Your branch/section is not set</strong> - please update your profile or ask admin.'}<br>
-            Ask admin to add your class to the timetable.
-          </p>
+          <p style="font-weight:700;margin-bottom:8px;">No timetable slots found.</p>
+          <div style="background:#fef3c7;border-radius:8px;padding:12px;margin:10px auto;max-width:380px;text-align:left;font-size:.85rem;">
+            <i class="fa-solid fa-triangle-exclamation" style="color:#92400e;"></i>
+            <strong>Your branch:</strong> ${branch || 'Not set'}<br><br>
+            Ask admin to go to <strong>Timetable → Add Slot</strong> and set branch to exactly:<br>
+            <code style="background:#fff;padding:3px 8px;border-radius:4px;font-size:.88rem;display:inline-block;margin-top:4px;">${branch || 'your branch name'}</code>
+          </div>
         </div>
       </div>` :
       DAYS.map(day => {
