@@ -2249,8 +2249,7 @@ function buildBranchOptions(course, selectId) {
   const known = (typeof BRANCH_MAP !== 'undefined' ? BRANCH_MAP : {})[course] || [];
   sel.innerHTML = '<option value="">- Select branch -</option>' +
     known.map(b => {
-      const combined = course + ' - ' + b;
-      return '<option value="' + combined + '">' + b + '</option>';
+      return '<option value="' + b + '">' + b + '</option>';
     }).join('') +
     '<option value="">All branches (no filter)</option>';
 }
