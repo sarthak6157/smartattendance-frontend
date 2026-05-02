@@ -1710,6 +1710,7 @@ const API = (() => {
   };
 
   return {
+    _base,
     base,
     get:    (path)         => fetch(`${base}${path}`, { headers: headers() }).then(handle),
     post:   (path, body)   => fetch(`${base}${path}`, { method:'POST',   headers: headers(), body: JSON.stringify(body) }).then(handle),
@@ -1720,7 +1721,7 @@ const API = (() => {
 
 /* =========================== STATE =========================== */
 let currentUser = null;
-var loginRole   = 'student';  // var (not let) so setLoginRole can access it before declaration
+let loginRole   = 'student';
 let qrInterval  = null;
 let camStream   = null;
 let scanState   = {};
@@ -2523,7 +2524,7 @@ async function renderTimetable(c) {
 
   // Group slots by day
   const byDay = {};
-  DAYS.forEach(d => byDay[d] = slotList.filter(s => s.day_of_week === d));
+  DAYS.forEach(d => byDay[d] = slotList.filter(s => (s.day_of_week||'').toLowerCase() === d.toLowerCase()));
 
   c.innerHTML = `
     <div class="page-header">
@@ -3231,7 +3232,7 @@ async function renderFacTimetable(c) {
   }
 
   const grouped = {};
-  DAYS.forEach(d => grouped[d] = slotList.filter(s => s.day_of_week === d));
+  DAYS.forEach(d => grouped[d] = slotList.filter(s => (s.day_of_week||'').toLowerCase() === d.toLowerCase()));
 
   let html = '<div class="page-header"><h2><i class="fa-solid fa-calendar-days" style="color:var(--accent);"></i> My Timetable</h2><button class="btn btn-success" onclick="openExtraClassModal()"><i class="fa-solid fa-circle-plus"></i> Add Extra Class</button></div>';
   html += '<div class="alert alert-info"><i class="fa-solid fa-circle-info"></i> <strong>Go Live</strong> activates 5 min before class and locks after class ends. Use <strong>Add Extra Class</strong> for one-time sessions outside the timetable.</div>';
@@ -3777,7 +3778,7 @@ async function renderStuDashboard(c) {
     const v = attByDate[key];
     if (!v) {
       const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date(yr,mo,d).getDay()];
-      const hasClass = slots.some(sl => sl.day_of_week === dayName);
+      const hasClass = slots.some(sl => (sl.day_of_week||'').toLowerCase() === dayName.toLowerCase());
       if (!hasClass) return '';
       return '<span style="display:block;width:5px;height:5px;border-radius:50%;background:#9ca3af;margin:1px auto 0;"></span>';
     }
@@ -4048,7 +4049,7 @@ async function renderStuTimetable(c) {
   const activeSess = Array.isArray(sessions)? sessions: [];
   const todayName  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
   const grouped    = {};
-  DAYS.forEach(d => grouped[d] = slotList.filter(s => s.day_of_week === d));
+  DAYS.forEach(d => grouped[d] = slotList.filter(s => (s.day_of_week||'').toLowerCase() === d.toLowerCase()));
 
   c.innerHTML = `
     <div class="page-header">
@@ -4651,6 +4652,7 @@ async function exportStudentCSV() {
     a.click();
     toast('CSV downloaded!', 'success');
   } catch(e) { toast('Export failed: ' + e.message, 'error'); }
+}
 }
 
 /* =========================== SHARED PROFILE =========================== */
