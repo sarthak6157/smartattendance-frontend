@@ -2522,9 +2522,13 @@ async function renderTimetable(c) {
   const courseList= Array.isArray(courses) ? courses : [];
   const facList   = faculty.users || [];
 
-  // Group slots by day
+  // Group slots by day — handle both 'Monday' and 'monday' from API
   const byDay = {};
-  DAYS.forEach(d => byDay[d] = slotList.filter(s => (s.day_of_week||'').toLowerCase() === d.toLowerCase()));
+  DAYS.forEach(d => byDay[d] = slotList.filter(s => {
+    const slotDay = (s.day_of_week||'').toLowerCase().trim();
+    const compareDay = d.toLowerCase().trim();
+    return slotDay === compareDay;
+  }));
 
   c.innerHTML = `
     <div class="page-header">
