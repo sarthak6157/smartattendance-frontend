@@ -876,7 +876,7 @@ button, input, select, textarea { font-family: inherit; }
        </div>
 
        <!-- Section (free text) + Semester -->
-       <div class="form-row" id="secSemGroup" style="display:none;margin-bottom:0;">
+       <div class="form-row" id="semGroup" style="display:none;margin-bottom:0;">
          <div class="form-group" style="margin-bottom:0;">
            <label class="form-label">Section <small style="color:var(--muted);font-weight:400;">(optional)</small></label>
            <input class="form-control" id="regSection" placeholder="e.g. A or B or leave blank" maxlength="10">
@@ -1167,7 +1167,7 @@ button, input, select, textarea { font-family: inherit; }
         <div style="font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:8px;"><i class="fa-solid fa-graduation-cap"></i> ACADEMIC DETAILS</div>
         <div class="form-group">
           <label class="form-label">Branch / Department</label>
-          <input class="form-control" id="eu_branch" placeholder="e.g. B.Tech - CSE (Computer Science & Engineering)">
+          <input class="form-control" id="eu_branch" placeholder="e.g. B.Tech -  (Computer Science & Engineering)">
         </div>
         <div class="form-row">
           <div class="form-group" style="margin-bottom:0;"><label class="form-label">Section <small style="color:var(--muted);">(optional)</small></label>
@@ -1186,7 +1186,7 @@ button, input, select, textarea { font-family: inherit; }
     </div>
     <div id="eu_staff_fields" style="display:none;">
       <div class="form-group"><label class="form-label">Department</label>
-        <input class="form-control" id="eu_dept" placeholder="e.g. B.Tech CSE">
+        <input class="form-control" id="eu_dept" placeholder="e.g. B.Tech ">
       </div>
     </div>
     <div class="modal-footer">
@@ -1834,7 +1834,7 @@ function routeUser(user) {
 
 /* Branch options per course */
 const BRANCH_MAP = {
-  'B.Tech': ['CSE (Computer Science & Engineering)','ECE (Electronics & Communication)','ME (Mechanical Engineering)','Civil Engineering','EE (Electrical Engineering)','IT (Information Technology)','Chemical Engineering','Biotechnology','Aerospace Engineering'],
+  'B.Tech': ['CSE (Computer Science & Engineering)','CSE (AI-ML-DL)','CSE (IBM)','ECE (Electronics & Communication)','ME (Mechanical Engineering)','Civil Engineering','EE (Electrical Engineering)','IT (Information Technology)','Chemical Engineering','Biotechnology','Aerospace Engineering'],
   'B.E':    ['CSE','ECE','ME','Civil','EE','IT','Chemical','Biotechnology'],
   'BCA':    ['BCA (General)','BCA with Data Science','BCA with Cybersecurity'],
   'MCA':    ['MCA (General)','MCA with AI/ML','MCA with Cloud Computing'],
