@@ -4064,13 +4064,15 @@ async function renderStuTimetable(c) {
       <div class="card" style="text-align:center;">
         <div class="empty-state">
           <i class="fa-solid fa-calendar-xmark"></i>
-          <p style="font-weight:700;margin-bottom:8px;">No timetable slots found.</p>
-          <div style="background:#fef3c7;border-radius:8px;padding:12px;margin:10px auto;max-width:380px;text-align:left;font-size:.85rem;">
-            <i class="fa-solid fa-triangle-exclamation" style="color:#92400e;"></i>
-            <strong>Your branch:</strong> ${branch || 'Not set'}<br><br>
-            Ask admin to go to <strong>Timetable → Add Slot</strong> and set branch to exactly:<br>
-            <code style="background:#fff;padding:3px 8px;border-radius:4px;font-size:.88rem;display:inline-block;margin-top:4px;">${branch || 'your branch name'}</code>
-          </div>
+          <p style="font-weight:700;margin-bottom:8px;">No classes scheduled yet.</p>
+          <p style="color:var(--muted);font-size:.85rem;">Your timetable will appear here once admin adds your class schedule.</p>
+          <p style="color:var(--muted);font-size:.82rem;margin-top:6px;">
+            Section: <strong>${section || 'Not set'}</strong> &nbsp;&middot;&nbsp;
+            Branch: <strong>${branch || 'Not set'}</strong>
+          </p>
+          <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="stuNav('timetable')">
+            <i class="fa-solid fa-rotate"></i> Refresh
+          </button>
         </div>
       </div>` :
       DAYS.map(day => {
