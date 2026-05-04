@@ -3345,11 +3345,13 @@ async function renderFacDashboard(c) {
     if (liveNow) return 'live';
     const doneToday = ss.find(s => s.status==='closed' && s.timetable_id===sl.id && new Date(s.started_at).toDateString()===now.toDateString());
     if (doneToday) return 'done';
+    // Only mark missed if class time has passed AND no session was created today
+    const [sh,sm] = sl.start_time.split(':').map(Number);
     const [eh,em] = sl.end_time.split(':').map(Number);
     const nowM = now.getHours()*60+now.getMinutes();
-    if (nowM > eh*60+em) return 'missed';
-    const [sh,sm] = sl.start_time.split(':').map(Number);
+    // Check if IST offset needed: compare slot times (IST) with local browser time
     if (nowM >= sh*60+sm-5) return 'canstart';
+    if (nowM > eh*60+em+60) return 'missed';  // only missed 60min after end, not immediately
     return 'upcoming';
   }
 
@@ -4100,10 +4102,10 @@ async function renderStuDashboard(c) {
     // Check if there was a session for this slot today
     const sess = ss.find(s => s.timetable_id === sl.id && new Date(s.started_at).toDateString() === now.toDateString());
     if (!sess) {
-      // Check if it's upcoming or past
+      // Only mark missed after slot end time + 60 min buffer
       const [eh, em] = sl.end_time.split(':').map(Number);
       const nowM = now.getHours()*60 + now.getMinutes();
-      if (nowM > eh*60+em) return 'missed';
+      if (nowM > eh*60+em+60) return 'missed';
       return 'upcoming';
     }
     if (markedPresentIds.has(sess.id)) return 'present';
