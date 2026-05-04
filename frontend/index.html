@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1001,6 +1001,7 @@ button, input, select, textarea { font-family: inherit; }
         <a href="#" onclick="openExtraClassModal()" id="fnav-extra" style="color:#2d9e6b;"><i class="fa-solid fa-circle-plus"></i> Add Extra Class</a>
         <a href="#" onclick="facNav('qr')" id="fnav-qr"><i class="fa-solid fa-qrcode"></i> Live QR Code</a>
         <a href="#" onclick="facNav('attendance')" id="fnav-attendance"><i class="fa-solid fa-clipboard-list"></i> Attendance Sheet</a>
+        <a href="#" onclick="facNav('students')" id="fnav-students"><i class="fa-solid fa-user-graduate"></i> My Students</a>
         <div class="nav-section">Account</div>
         <a href="#" onclick="facNav('profile')" id="fnav-profile"><i class="fa-solid fa-user-circle"></i> My Profile</a>
       </nav>
@@ -2076,50 +2077,237 @@ async function renderUserMgmt(c) {
       </div>
     </div>
     <div class="card">
-      <div class="search-bar">
-        <input class="form-control" id="userSearch" placeholder="Search by name, ID, email..." style="max-width:280px;" oninput="filterUsersTable()">
-        <select class="form-control form-select" id="roleFilter" onchange="filterUsersTable()" style="max-width:140px;">
+      <!-- PRIMARY FILTERS ROW -->
+      <div class="search-bar" style="flex-wrap:wrap;gap:8px;">
+        <input class="form-control" id="userSearch" placeholder="Search name, ID, email..." style="min-width:200px;flex:1;" oninput="filterUsersTable()">
+        <select class="form-control form-select" id="roleFilter" onchange="onRoleFilterChange()" style="max-width:140px;">
           <option value="">All Roles</option><option value="student">Students</option><option value="faculty">Faculty</option><option value="admin">Admins</option>
         </select>
         <select class="form-control form-select" id="statusFilter" onchange="filterUsersTable()" style="max-width:140px;">
           <option value="">All Status</option><option value="active">Active</option><option value="pending">Pending</option><option value="inactive">Inactive</option>
         </select>
+        <button class="btn btn-outline btn-sm" onclick="toggleAdvancedFilters()" id="advFiltersBtn" style="white-space:nowrap;"><i class="fa-solid fa-sliders"></i> More Filters</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAllFilters()" title="Clear all filters"><i class="fa-solid fa-rotate-left"></i> Reset</button>
       </div>
+      <!-- ADVANCED FILTERS PANEL (student-specific) -->
+      <div id="advancedFilters" style="display:none;margin-top:10px;padding:14px 16px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:.72rem;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-bottom:10px;">STUDENT FILTERS</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);">BRANCH / DEPT</label>
+            <select class="form-control form-select" id="branchFilter" onchange="onBranchFilterChange()" style="min-width:190px;"><option value="">All Branches</option></select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);">SECTION</label>
+            <select class="form-control form-select" id="sectionFilter" onchange="filterUsersTable()" style="min-width:120px;"><option value="">All Sections</option></select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);">SEMESTER</label>
+            <select class="form-control form-select" id="semesterFilter" onchange="filterUsersTable()" style="min-width:130px;"><option value="">All Semesters</option></select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);">PROGRAM</label>
+            <select class="form-control form-select" id="courseFilter" onchange="filterUsersTable()" style="min-width:130px;"><option value="">All Programs</option></select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);">FACE REG.</label>
+            <select class="form-control form-select" id="faceFilter" onchange="filterUsersTable()" style="min-width:130px;">
+              <option value="">Any</option><option value="true">✔ Registered</option><option value="false">✘ Not Registered</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);">SORT BY</label>
+            <select class="form-control form-select" id="sortByFilter" onchange="filterUsersTable()" style="min-width:150px;">
+              <option value="created_at-desc">Newest First</option>
+              <option value="created_at-asc">Oldest First</option>
+              <option value="full_name-asc">Name A → Z</option>
+              <option value="full_name-desc">Name Z → A</option>
+              <option value="inst_id-asc">Roll No ↑</option>
+              <option value="inst_id-desc">Roll No ↓</option>
+              <option value="branch-asc">Branch A → Z</option>
+              <option value="semester-asc">Semester ↑</option>
+            </select>
+          </div>
+        </div>
+        <!-- Active filter tags -->
+        <div id="activeFilterTags" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+      <div id="usersResultInfo" style="font-size:.8rem;color:var(--muted);margin-top:10px;padding:0 4px;display:none;"></div>
       <div id="usersTableBody"><div class="empty-state"><div class="big-spinner" style="margin:0 auto;width:30px;height:30px;border-width:3px;"></div></div></div>
     </div>`;
   await loadUsersTable();
 }
 
 let allUsersCache = [];
+let _filterOptions = { branches:[], sections:[], semesters:[], courses:[] };
+
 async function loadUsersTable() {
   try {
-    const data = await API.get('/users?limit=500');
-    allUsersCache = data.users||[];
+    const [data, opts] = await Promise.all([
+      API.get('/users?limit=500'),
+      API.get('/users/filter-options').catch(()=>({ branches:[], sections:[], semesters:[], courses:[] })),
+    ]);
+    allUsersCache  = data.users || [];
+    _filterOptions = opts;
+    _populateFilterDropdowns(opts);
     filterUsersTable();
   } catch(e) {
-    document.getElementById('usersTableBody').innerHTML = `<div class="alert alert-warning">Failed to load users: ${e.message}</div>`;
+    document.getElementById('usersTableBody').innerHTML =
+      `<div class="alert alert-warning">Failed to load users: ${e.message}</div>`;
   }
 }
 
+function _populateFilterDropdowns(opts) {
+  const fill = (id, vals, label='All') => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = `<option value="">${label}</option>` +
+      vals.map(v=>`<option value="${v}">${v}</option>`).join('');
+  };
+  fill('branchFilter',   opts.branches  || [], 'All Branches');
+  fill('sectionFilter',  opts.sections  || [], 'All Sections');
+  fill('semesterFilter', opts.semesters || [], 'All Semesters');
+  fill('courseFilter',   opts.courses   || [], 'All Programs');
+}
+
+function onRoleFilterChange() {
+  const role = document.getElementById('roleFilter')?.value || '';
+  // Show/hide advanced filters only for student role or no role
+  const adv = document.getElementById('advancedFilters');
+  const btn = document.getElementById('advFiltersBtn');
+  if (adv && role === 'faculty') { adv.style.display = 'none'; }
+  filterUsersTable();
+}
+
+function onBranchFilterChange() {
+  // When branch changes, filter sections to only those matching that branch
+  const branch = document.getElementById('branchFilter')?.value || '';
+  const sectionEl = document.getElementById('sectionFilter');
+  if (!sectionEl) return filterUsersTable();
+  if (!branch) {
+    _populateFilterDropdowns(_filterOptions);
+  } else {
+    const matchSecs = [...new Set(
+      allUsersCache.filter(u => u.role==='student' && (u.branch||'').toLowerCase()===branch.toLowerCase())
+                   .map(u => u.section).filter(Boolean)
+    )].sort();
+    sectionEl.innerHTML = `<option value="">All Sections</option>` +
+      matchSecs.map(s=>`<option value="${s}">${s}</option>`).join('');
+  }
+  filterUsersTable();
+}
+
+function toggleAdvancedFilters() {
+  const adv = document.getElementById('advancedFilters');
+  const btn = document.getElementById('advFiltersBtn');
+  if (!adv) return;
+  const isOpen = adv.style.display !== 'none';
+  adv.style.display = isOpen ? 'none' : 'block';
+  if (btn) btn.innerHTML = isOpen
+    ? '<i class="fa-solid fa-sliders"></i> More Filters'
+    : '<i class="fa-solid fa-sliders"></i> Hide Filters';
+}
+
+function clearAllFilters() {
+  ['userSearch','roleFilter','statusFilter','branchFilter','sectionFilter',
+   'semesterFilter','courseFilter','faceFilter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const sortEl = document.getElementById('sortByFilter');
+  if (sortEl) sortEl.value = 'created_at-desc';
+  _populateFilterDropdowns(_filterOptions);
+  filterUsersTable();
+}
+
+function _renderFilterTags() {
+  const tags = [];
+  const map = {
+    branchFilter: 'Branch', sectionFilter: 'Section', semesterFilter: 'Semester',
+    courseFilter: 'Program', faceFilter: 'Face', statusFilter: 'Status', roleFilter: 'Role'
+  };
+  Object.entries(map).forEach(([id, label]) => {
+    const el = document.getElementById(id);
+    if (el && el.value) {
+      tags.push(`<span style="display:inline-flex;align-items:center;gap:5px;background:var(--primary-light,#e0f2fe);color:var(--primary);border-radius:20px;padding:3px 10px;font-size:.74rem;font-weight:600;">
+        ${label}: ${el.value}
+        <span onclick="(function(){document.getElementById('${id}').value='';filterUsersTable();})()" style="cursor:pointer;font-size:.85rem;opacity:.7;">✕</span>
+      </span>`);
+    }
+  });
+  const wrap = document.getElementById('activeFilterTags');
+  if (wrap) wrap.innerHTML = tags.join('');
+}
+
 function filterUsersTable() {
-  const search = (document.getElementById('userSearch')?.value||'').toLowerCase();
-  const role   = document.getElementById('roleFilter')?.value||'';
-  const status = document.getElementById('statusFilter')?.value||'';
+  const search   = (document.getElementById('userSearch')?.value||'').toLowerCase().trim();
+  const role     = document.getElementById('roleFilter')?.value||'';
+  const status   = document.getElementById('statusFilter')?.value||'';
+  const branch   = (document.getElementById('branchFilter')?.value||'').toLowerCase();
+  const section  = document.getElementById('sectionFilter')?.value||'';
+  const semester = document.getElementById('semesterFilter')?.value||'';
+  const course   = (document.getElementById('courseFilter')?.value||'').toLowerCase();
+  const face     = document.getElementById('faceFilter')?.value||'';
+  const sortVal  = (document.getElementById('sortByFilter')?.value||'created_at-desc');
+  const [sortKey, sortDir] = sortVal.split('-');
+
   let list = allUsersCache;
-  if (search) list = list.filter(u => `${u.full_name} ${u.inst_id} ${u.email}`.toLowerCase().includes(search));
-  if (role)   list = list.filter(u => u.role   === role);
-  if (status) list = list.filter(u => u.status === status);
+
+  // Filters
+  if (search)   list = list.filter(u=>`${u.full_name} ${u.inst_id} ${u.email}`.toLowerCase().includes(search));
+  if (role)     list = list.filter(u=>u.role===role);
+  if (status)   list = list.filter(u=>u.status===status);
+  if (branch)   list = list.filter(u=>(u.branch||u.department||'').toLowerCase().includes(branch));
+  if (section)  list = list.filter(u=>u.section===section);
+  if (semester) list = list.filter(u=>u.semester===semester);
+  if (course)   list = list.filter(u=>(u.course||'').toLowerCase().includes(course));
+  if (face==='true')  list = list.filter(u=>u.face_registered===true);
+  if (face==='false') list = list.filter(u=>!u.face_registered);
+
+  // Sort
+  const semOrd = v => { const m={'1st':1,'2nd':2,'3rd':3,'4th':4,'5th':5,'6th':6,'7th':7,'8th':8}; return m[v]||parseInt(v)||99; };
+  list = [...list].sort((a,b) => {
+    let va='', vb='';
+    if (sortKey==='created_at')   { va=a.created_at||''; vb=b.created_at||''; }
+    else if (sortKey==='full_name') { va=(a.full_name||'').toLowerCase(); vb=(b.full_name||'').toLowerCase(); }
+    else if (sortKey==='inst_id')  { va=a.inst_id||''; vb=b.inst_id||''; }
+    else if (sortKey==='branch')   { va=(a.branch||'').toLowerCase(); vb=(b.branch||'').toLowerCase(); }
+    else if (sortKey==='semester') { va=semOrd(a.semester); vb=semOrd(b.semester); return sortDir==='asc'?va-vb:vb-va; }
+    if (sortDir==='asc') return va<vb?-1:va>vb?1:0;
+    return va>vb?-1:va<vb?1:0;
+  });
+
+  // Update filter tags & result info
+  _renderFilterTags();
+  const infoEl = document.getElementById('usersResultInfo');
+  if (infoEl) {
+    infoEl.style.display = 'block';
+    infoEl.textContent = `Showing ${list.length} of ${allUsersCache.length} users`;
+  }
+
   const wrap = document.getElementById('usersTableBody');
   if (!wrap) return;
-  if (!list.length) { wrap.innerHTML = '<div class="empty-state"><i class="fa-solid fa-users-slash"></i><p>No users found</p></div>'; return; }
+  if (!list.length) {
+    wrap.innerHTML = '<div class="empty-state"><i class="fa-solid fa-users-slash"></i><p>No users match the selected filters</p></div>';
+    return;
+  }
+
+  const isStudentView = !role || role === 'student';
   wrap.innerHTML = `<div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>#</th><th>Name</th><th>ID</th><th>Role</th><th>Department</th><th>Status</th><th>Actions</th></tr></thead>
+    <thead><tr><th>#</th><th>Name</th><th>ID</th><th>Role</th>
+    ${isStudentView?'<th>Branch</th><th>Sec</th><th>Sem</th>':'<th>Department</th>'}
+    <th>Face</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody>${list.map(u=>`<tr>
       <td>${u.id}</td>
       <td><strong>${u.full_name}</strong><br><small style="color:var(--muted);">${u.email}</small></td>
       <td><code>${u.inst_id}</code></td>
       <td><span class="badge ${u.role==='admin'?'bg-red':u.role==='faculty'?'bg-blue':'bg-gray'}">${u.role}</span></td>
-      <td>${u.department||'-'}</td>
+      ${isStudentView
+        ? `<td style="font-size:.82rem;">${u.branch||u.department||'-'}</td>
+           <td><span style="font-weight:600;">${u.section||'-'}</span></td>
+           <td style="font-size:.82rem;">${u.semester||'-'}</td>`
+        : `<td style="font-size:.82rem;">${u.department||u.branch||'-'}</td>`}
+      <td>${u.face_registered?'<span style="color:#2d9e6b;font-size:.82rem;">✔</span>':'<span style="color:#9ca3af;font-size:.82rem;">—</span>'}</td>
       <td><span class="badge ${u.status==='active'?'bg-green':u.status==='pending'?'bg-orange':'bg-red'}">${u.status}</span></td>
       <td style="display:flex;gap:6px;flex-wrap:wrap;">
         ${u.status==='pending'?`<button class="btn btn-success btn-sm" onclick="approveUser(${u.id})"><i class="fa-solid fa-check"></i> Approve</button>`:''}
@@ -2889,6 +3077,161 @@ async function saveSettings() {
 }
 
 /* =========================== FACULTY =========================== */
+async function renderFacStudents(c) {
+  c.innerHTML = `<div class="empty-state"><div class="big-spinner" style="margin:0 auto;width:36px;height:36px;border-width:3px;"></div></div>`;
+  let allStudents = [];
+  let filterOpts  = { branches:[], sections:[], semesters:[], courses:[] };
+  try {
+    const [data, opts] = await Promise.all([
+      API.get('/users?role=student&limit=500'),
+      API.get('/users/filter-options').catch(()=>({ branches:[], sections:[], semesters:[], courses:[] })),
+    ]);
+    allStudents = data.users || [];
+    filterOpts  = opts;
+  } catch(e) {
+    c.innerHTML = `<div class="alert alert-warning">Failed to load students: ${e.message}</div>`; return;
+  }
+
+  function fill(id, vals, label='All') {
+    const el = c.querySelector('#'+id);
+    if (!el) return;
+    el.innerHTML = `<option value="">${label}</option>` + vals.map(v=>`<option value="${v}">${v}</option>`).join('');
+  }
+
+  function applyFilters() {
+    const search   = (c.querySelector('#fs_search')?.value||'').toLowerCase().trim();
+    const branch   = (c.querySelector('#fs_branch')?.value||'').toLowerCase();
+    const section  = c.querySelector('#fs_section')?.value||'';
+    const semester = c.querySelector('#fs_semester')?.value||'';
+    const course   = (c.querySelector('#fs_course')?.value||'').toLowerCase();
+    const status   = c.querySelector('#fs_status')?.value||'';
+    const face     = c.querySelector('#fs_face')?.value||'';
+    const sortVal  = c.querySelector('#fs_sort')?.value||'full_name-asc';
+    const [sortKey, sortDir] = sortVal.split('-');
+
+    let list = allStudents;
+    if (search)   list = list.filter(u=>`${u.full_name} ${u.inst_id} ${u.email}`.toLowerCase().includes(search));
+    if (branch)   list = list.filter(u=>(u.branch||u.department||'').toLowerCase().includes(branch));
+    if (section)  list = list.filter(u=>u.section===section);
+    if (semester) list = list.filter(u=>u.semester===semester);
+    if (course)   list = list.filter(u=>(u.course||'').toLowerCase().includes(course));
+    if (status)   list = list.filter(u=>u.status===status);
+    if (face==='true')  list = list.filter(u=>u.face_registered===true);
+    if (face==='false') list = list.filter(u=>!u.face_registered);
+
+    const semOrd = v => { const m={'1st':1,'2nd':2,'3rd':3,'4th':4,'5th':5,'6th':6,'7th':7,'8th':8}; return m[v]||parseInt(v)||99; };
+    list = [...list].sort((a,b) => {
+      let va='', vb='';
+      if (sortKey==='full_name') { va=(a.full_name||'').toLowerCase(); vb=(b.full_name||'').toLowerCase(); }
+      else if (sortKey==='inst_id') { va=a.inst_id||''; vb=b.inst_id||''; }
+      else if (sortKey==='branch')  { va=(a.branch||'').toLowerCase(); vb=(b.branch||'').toLowerCase(); }
+      else if (sortKey==='semester'){ va=semOrd(a.semester); vb=semOrd(b.semester); return sortDir==='asc'?va-vb:vb-va; }
+      if (sortDir==='asc') return va<vb?-1:va>vb?1:0;
+      return va>vb?-1:va<vb?1:0;
+    });
+
+    const infoEl = c.querySelector('#fs_result_info');
+    if (infoEl) infoEl.textContent = `Showing ${list.length} of ${allStudents.length} students`;
+
+    const tbody = c.querySelector('#fs_table_body');
+    if (!tbody) return;
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted);">No students match the selected filters</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = list.map((u,i)=>`<tr>
+      <td style="color:var(--muted);font-size:.8rem;">${i+1}</td>
+      <td><strong>${u.full_name}</strong><br><small style="color:var(--muted);">${u.email}</small></td>
+      <td><code style="font-size:.82rem;">${u.inst_id}</code></td>
+      <td style="font-size:.82rem;">${u.branch||u.department||'-'}</td>
+      <td><span style="font-weight:700;">${u.section||'-'}</span></td>
+      <td style="font-size:.82rem;">${u.semester||'-'}</td>
+      <td>${u.face_registered
+        ?'<span style="color:#2d9e6b;font-weight:700;font-size:.85rem;">✔ Done</span>'
+        :'<span style="color:#e63946;font-size:.82rem;">✘ No</span>'}</td>
+    </tr>`).join('');
+  }
+
+  c.innerHTML = `
+    <h2><i class="fa-solid fa-user-graduate" style="color:var(--accent);"></i> My Students</h2>
+    <div class="card">
+      <!-- Primary row -->
+      <div class="search-bar" style="flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+        <input class="form-control" id="fs_search" placeholder="Search name, ID, email..." style="min-width:200px;flex:1;" oninput="window._facStudentFilter()">
+        <select class="form-control form-select" id="fs_status" onchange="window._facStudentFilter()" style="max-width:130px;">
+          <option value="">All Status</option><option value="active">Active</option><option value="pending">Pending</option><option value="inactive">Inactive</option>
+        </select>
+        <select class="form-control form-select" id="fs_face" onchange="window._facStudentFilter()" style="max-width:150px;">
+          <option value="">Face: Any</option><option value="true">✔ Face Registered</option><option value="false">✘ Not Registered</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="(function(){['fs_search','fs_branch','fs_section','fs_semester','fs_course','fs_status','fs_face'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});window._facStudentFilter();})()">
+          <i class="fa-solid fa-rotate-left"></i> Reset
+        </button>
+      </div>
+      <!-- Advanced filters -->
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);margin-bottom:10px;">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <label style="font-size:.72rem;font-weight:600;color:var(--muted);">BRANCH</label>
+          <select class="form-control form-select" id="fs_branch" onchange="window._facStudentBranchChange()" style="min-width:190px;"><option value="">All Branches</option></select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <label style="font-size:.72rem;font-weight:600;color:var(--muted);">SECTION</label>
+          <select class="form-control form-select" id="fs_section" onchange="window._facStudentFilter()" style="min-width:110px;"><option value="">All Sections</option></select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <label style="font-size:.72rem;font-weight:600;color:var(--muted);">SEMESTER</label>
+          <select class="form-control form-select" id="fs_semester" onchange="window._facStudentFilter()" style="min-width:130px;"><option value="">All Semesters</option></select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <label style="font-size:.72rem;font-weight:600;color:var(--muted);">PROGRAM</label>
+          <select class="form-control form-select" id="fs_course" onchange="window._facStudentFilter()" style="min-width:130px;"><option value="">All Programs</option></select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <label style="font-size:.72rem;font-weight:600;color:var(--muted);">SORT BY</label>
+          <select class="form-control form-select" id="fs_sort" onchange="window._facStudentFilter()" style="min-width:150px;">
+            <option value="full_name-asc">Name A → Z</option>
+            <option value="full_name-desc">Name Z → A</option>
+            <option value="inst_id-asc">Roll No ↑</option>
+            <option value="inst_id-desc">Roll No ↓</option>
+            <option value="branch-asc">Branch A → Z</option>
+            <option value="semester-asc">Semester ↑</option>
+          </select>
+        </div>
+      </div>
+      <div id="fs_result_info" style="font-size:.8rem;color:var(--muted);padding:0 4px;margin-bottom:6px;"></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>#</th><th>Name</th><th>Roll No</th><th>Branch</th><th>Section</th><th>Semester</th><th>Face</th></tr></thead>
+          <tbody id="fs_table_body">
+            <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+
+  fill('fs_branch',   filterOpts.branches  || [], 'All Branches');
+  fill('fs_section',  filterOpts.sections  || [], 'All Sections');
+  fill('fs_semester', filterOpts.semesters || [], 'All Semesters');
+  fill('fs_course',   filterOpts.courses   || [], 'All Programs');
+
+  window._facStudentFilter = applyFilters;
+  window._facStudentBranchChange = () => {
+    const branch = (c.querySelector('#fs_branch')?.value||'').toLowerCase();
+    const secEl  = c.querySelector('#fs_section');
+    if (!secEl) return applyFilters();
+    if (!branch) {
+      secEl.innerHTML = `<option value="">All Sections</option>` +
+        (filterOpts.sections||[]).map(s=>`<option value="${s}">${s}</option>`).join('');
+    } else {
+      const secs = [...new Set(allStudents.filter(u=>(u.branch||'').toLowerCase().includes(branch)).map(u=>u.section).filter(Boolean))].sort();
+      secEl.innerHTML = `<option value="">All Sections</option>` + secs.map(s=>`<option value="${s}">${s}</option>`).join('');
+    }
+    applyFilters();
+  };
+
+  applyFilters();
+}
+
 function initFaculty() {
   const u = currentUser;
   document.getElementById('facNameNav').textContent    = u.full_name.split(' ')[0];
@@ -2907,6 +3250,7 @@ async function facNav(section) {
     timetable:  renderFacTimetable,
     qr:         renderFacQR,
     attendance: renderFacAttendance,
+    students:   renderFacStudents,
     profile:    (c) => renderProfile(c, currentUser),
   };
   if (renders[section]) await renders[section](c);
