@@ -1689,6 +1689,14 @@ async function installPWA() {
 
 
 /* =========================== API CONFIG =========================== */
+// ── Branch normalization helper ──────────────────────────────────────────────
+function normalizeBranch(b) {
+  if (!b) return '';
+  // Extract core branch name: "B.Tech - CSE (AI-ML-DL)" → "CSE (AI-ML-DL)"
+  // Also handles "CSE(AI-ML-DL)" as-is
+  return b.replace(/^(b\.tech|b\.e|m\.tech|bca|mca|mba|b\.sc|b\.c\.a)[\s\-]+/i, '').trim();
+}
+
 const API = (() => {
   // If BACKEND_URL is set (Vercel deployment), use it. Otherwise use same origin (Render).
   // ⚙️ SET YOUR RENDER BACKEND URL HERE when hosting frontend on Vercel
@@ -3917,7 +3925,9 @@ async function loadAttSheet() {
   try {
     // Fetch attendance records AND only students matching this session's branch+section
     let studentUrl = '/users?role=student&limit=500';
-    if (sessionBranch)  studentUrl += '&branch='  + encodeURIComponent(sessionBranch);
+    // Normalize branch to core name (strip degree prefix) for flexible backend matching
+    const queryBranch = normalizeBranch(sessionBranch);
+    if (queryBranch)    studentUrl += '&branch='  + encodeURIComponent(queryBranch);
     if (sessionSection) studentUrl += '&section=' + encodeURIComponent(sessionSection);
 
     const [attData, stuData] = await Promise.all([
