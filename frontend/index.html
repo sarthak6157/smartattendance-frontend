@@ -1689,14 +1689,6 @@ async function installPWA() {
 
 
 /* =========================== API CONFIG =========================== */
-// ── Branch normalization helper ──────────────────────────────────────────────
-function normalizeBranch(b) {
-  if (!b) return '';
-  // Extract core branch name: "B.Tech - CSE (AI-ML-DL)" → "CSE (AI-ML-DL)"
-  // Also handles "CSE(AI-ML-DL)" as-is
-  return b.replace(/^(b\.tech|b\.e|m\.tech|bca|mca|mba|b\.sc|b\.c\.a)[\s\-]+/i, '').trim();
-}
-
 const API = (() => {
   // If BACKEND_URL is set (Vercel deployment), use it. Otherwise use same origin (Render).
   // ⚙️ SET YOUR RENDER BACKEND URL HERE when hosting frontend on Vercel
@@ -3353,13 +3345,14 @@ async function renderFacDashboard(c) {
     if (liveNow) return 'live';
     const doneToday = ss.find(s => s.status==='closed' && s.timetable_id===sl.id && new Date(s.started_at).toDateString()===now.toDateString());
     if (doneToday) return 'done';
-    // Only mark missed if class time has passed AND no session was created today
     const [sh,sm] = sl.start_time.split(':').map(Number);
     const [eh,em] = sl.end_time.split(':').map(Number);
     const nowM = now.getHours()*60+now.getMinutes();
-    // Check if IST offset needed: compare slot times (IST) with local browser time
-    if (nowM >= sh*60+sm-5) return 'canstart';
-    if (nowM > eh*60+em+60) return 'missed';  // only missed 60min after end, not immediately
+    const startM = sh*60+sm;
+    const endM   = eh*60+em;
+    // CORRECT ORDER: check end first, then start
+    if (nowM > endM + 15) return 'missed';          // 15min after end → missed
+    if (nowM >= startM - 30) return 'canstart';     // 30min before start until end+15 → Go Live
     return 'upcoming';
   }
 
@@ -3925,9 +3918,7 @@ async function loadAttSheet() {
   try {
     // Fetch attendance records AND only students matching this session's branch+section
     let studentUrl = '/users?role=student&limit=500';
-    // Normalize branch to core name (strip degree prefix) for flexible backend matching
-    const queryBranch = normalizeBranch(sessionBranch);
-    if (queryBranch)    studentUrl += '&branch='  + encodeURIComponent(queryBranch);
+    if (sessionBranch)  studentUrl += '&branch='  + encodeURIComponent(sessionBranch);
     if (sessionSection) studentUrl += '&section=' + encodeURIComponent(sessionSection);
 
     const [attData, stuData] = await Promise.all([
