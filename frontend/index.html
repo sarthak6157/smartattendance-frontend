@@ -4100,18 +4100,25 @@ async function renderStuDashboard(c) {
   const todayDateKey = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
 
   function slotStatus(sl) {
+    const [sh, sm] = sl.start_time.split(':').map(Number);
+    const [eh, em] = sl.end_time.split(':').map(Number);
+    const nowM  = now.getHours()*60 + now.getMinutes();
+    const startM = sh*60+sm;
+    const endM   = eh*60+em;
+
     // Check if there was a session for this slot today
     const sess = ss.find(s => s.timetable_id === sl.id && new Date(s.started_at).toDateString() === now.toDateString());
-    if (!sess) {
-      // Only mark missed after slot end time + 60 min buffer
-      const [eh, em] = sl.end_time.split(':').map(Number);
-      const nowM = now.getHours()*60 + now.getMinutes();
-      if (nowM > eh*60+em+60) return 'missed';
-      return 'upcoming';
+
+    if (sess) {
+      if (markedPresentIds.has(sess.id)) return 'present';
+      if (sess.status === 'active') return 'live';
+      return 'absent';
     }
-    if (markedPresentIds.has(sess.id)) return 'present';
-    if (sess.status === 'active') return 'live';
-    return 'absent';
+
+    // No session - check time (CORRECT ORDER: end check first)
+    if (nowM > endM + 15)    return 'missed';    // 15min after class ends
+    if (nowM >= startM - 30) return 'upcoming';  // within class window, waiting for faculty
+    return 'upcoming';
   }
 
   const todayPresent  = todaySlots.filter(sl => slotStatus(sl)==='present').length;
