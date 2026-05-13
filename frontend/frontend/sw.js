@@ -1,121 +1,109 @@
-// Service Worker for TMU Smart Attendance — Push + Offline Caching
-const CACHE_NAME = 'tmu-attendance-v2';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-];
+// Smart Attendance SW — v3 (force-kills v1/v2)
+const CACHE_NAME = 'tmu-attendance-v3';
+const STATIC_ASSETS = ['/', '/index.html', '/manifest.json'];
 
-// Pre-cache critical assets on install
+// Allow the page to tell the SW to skip waiting and take over immediately
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('install', e => {
+  // Take over immediately — don't wait for old SW to die
   self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache =>
-      Promise.allSettled(
-        STATIC_ASSETS.map(url => cache.add(url).catch(err => console.warn('Cache miss:', url, err)))
-      )
+      Promise.allSettled(STATIC_ASSETS.map(url => cache.add(url).catch(() => {})))
     )
   );
 });
 
-// Remove old caches on activate
 self.addEventListener('activate', e => {
   e.waitUntil(
+    // Delete ALL old caches (v1, v2, anything else)
     caches.keys()
-      .then(keys => Promise.all(keys.map(k => k !== CACHE_NAME ? caches.delete(k) : null)))
-      .then(() => self.clients.claim())
+      .then(keys => Promise.all(
+        keys.filter(k => k !== CACHE_NAME).map(k => {
+          console.log('[SW v3] Deleting old cache:', k);
+          return caches.delete(k);
+        })
+      ))
+      .then(() => self.clients.claim()) // take control of all open tabs immediately
   );
 });
 
-// Fetch strategy:
-//   - API calls → Network first, no cache
-//   - Static assets (JS/CSS/images) → Cache first, update in background
-//   - HTML pages → Network first, fall back to cache
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // API: always network, never cache
-  if (url.pathname.startsWith('/api/') || url.pathname.match(/^\/(sessions|timetable|attendance|users|courses|settings)/)) {
-    return; // let browser handle normally
+  // NEVER cache sw.js itself
+  if (url.pathname === '/sw.js') return;
+
+  // API calls — always go to network, never cache
+  if (url.pathname.startsWith('/api/') ||
+      url.pathname.match(/^\/(sessions|timetable|attendance|users|courses|settings|auth)/)) {
+    return;
   }
 
-  // Static assets: cache first
-  if (['style', 'script', 'font', 'image'].includes(e.request.destination)) {
+  // index.html — always network first, fall back to cache
+  if (url.pathname === '/' || url.pathname === '/index.html' || e.request.mode === 'navigate') {
+    e.respondWith(networkFirst(e.request));
+    return;
+  }
+
+  // Static assets (images, icons) — cache first
+  if (['image', 'font'].includes(e.request.destination)) {
     e.respondWith(cacheFirst(e.request));
     return;
   }
 
-  // HTML pages: network first, fall back to cache
   e.respondWith(networkFirst(e.request));
 });
 
-async function cacheFirst(request) {
+async function cacheFirst(req) {
   const cache  = await caches.open(CACHE_NAME);
-  const cached = await cache.match(request);
+  const cached = await cache.match(req);
   if (cached) return cached;
   try {
-    const response = await fetch(request);
-    if (response.ok) cache.put(request, response.clone());
-    return response;
-  } catch (e) {
-    return new Response('Offline', { status: 503 });
-  }
+    const res = await fetch(req);
+    if (res.ok) cache.put(req, res.clone());
+    return res;
+  } catch { return new Response('Offline', { status: 503 }); }
 }
 
-async function networkFirst(request) {
+async function networkFirst(req) {
   const cache = await caches.open(CACHE_NAME);
   try {
-    const response = await fetch(request);
-    if (response.ok) cache.put(request, response.clone());
-    return response;
-  } catch (e) {
-    const cached = await cache.match(request);
-    if (cached) return cached;
-    if (request.mode === 'navigate') {
-      const fallback = await cache.match('/index.html');
-      if (fallback) return fallback;
-    }
-    return new Response('You are offline. Please reconnect.', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+    const res = await fetch(req);
+    if (res.ok) cache.put(req, res.clone());
+    return res;
+  } catch {
+    const cached = await cache.match(req) || await cache.match('/index.html');
+    return cached || new Response('Offline — please reconnect.', { status: 503, headers: { 'Content-Type': 'text/plain' } });
   }
 }
 
-// Handle push notifications
+// Push notifications
 self.addEventListener('push', e => {
   let data = { title: 'Smart Attendance', body: 'You have a notification', url: '/' };
-  try {
-    if (e.data) data = JSON.parse(e.data.text());
-  } catch {}
-
+  try { if (e.data) data = JSON.parse(e.data.text()); } catch {}
   e.waitUntil(
     self.registration.showNotification(data.title, {
-      body:    data.body,
-      icon:    '/icon-192.png',
-      badge:   '/icon-192.png',
-      vibrate: [200, 100, 200],
-      data:    { url: data.url || '/' },
-      actions: [
-        { action: 'mark',    title: 'Mark Attendance' },
-        { action: 'dismiss', title: 'Dismiss' },
-      ],
+      body: data.body, icon: '/tmu_icon_192.png', badge: '/tmu_icon_192.png',
+      vibrate: [200, 100, 200], data: { url: data.url || '/' },
+      actions: [{ action: 'open', title: 'Open' }, { action: 'dismiss', title: 'Dismiss' }],
     })
   );
 });
 
-// Handle notification click
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   if (e.action === 'dismiss') return;
   const url = e.notification.data?.url || '/';
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const client of list) {
-        if (client.url.includes(self.location.origin)) {
-          client.focus();
-          client.navigate(url);
-          return;
-        }
+      for (const c of list) {
+        if (c.url.includes(self.location.origin)) { c.focus(); c.navigate(url); return; }
       }
       return clients.openWindow(url);
     })
