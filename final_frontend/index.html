@@ -967,6 +967,7 @@ button, input, select, textarea { font-family: inherit; }
         <div class="nav-section">Reports</div>
         <a href="#" onclick="adminNav('reports')" id="anav-reports"><i class="fa-solid fa-chart-bar"></i> Attendance Reports</a>
         <a href="#" onclick="adminNav('defaulters')" id="anav-defaulters"><i class="fa-solid fa-triangle-exclamation" style="color:#e63946;"></i> Defaulter List</a>
+        <a href="#" onclick="adminNav('promote')" id="anav-promote"><i class="fa-solid fa-arrow-up-right-dots" style="color:#2d9e6b;"></i> Promote Students</a>
         <a href="#" onclick="adminNav('audit')" id="anav-audit"><i class="fa-solid fa-scroll"></i> Audit Log</a>
         <div class="nav-section">System</div>
         <a href="#" onclick="adminNav('settings')" id="anav-settings"><i class="fa-solid fa-gear"></i> Settings</a>
@@ -1998,6 +1999,7 @@ async function adminNav(section) {
     sessions:  renderAllSessions,
     reports:    renderReports,
     defaulters: renderDefaulters,
+    promote:    renderPromotePage,
     audit:      renderAuditLog,
     settings:   renderSettingsPage,
     profile:   (c) => renderProfile(c, currentUser),
@@ -2321,6 +2323,7 @@ function filterUsersTable() {
         ${u.status==='active'?`<button class="btn btn-outline btn-sm" onclick="setUserStatus(${u.id},'inactive')"><i class="fa-solid fa-ban"></i></button>`:''}
         ${u.status==='inactive'?`<button class="btn btn-success btn-sm" onclick="setUserStatus(${u.id},'active')"><i class="fa-solid fa-check"></i></button>`:''}
         <button class="btn btn-outline btn-sm" onclick="openEditUser(${u.id})" title="Edit user"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal(${u.id},'${u.full_name.replace(/'/g,'')}')" title="Reset password"><i class="fa-solid fa-key"></i></button>
         ${u.id!==currentUser.id?`<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id},'${u.full_name}')"><i class="fa-solid fa-trash"></i></button>`:''}
       </td>
     </tr>`).join('')}</tbody></table></div>`;
@@ -2977,7 +2980,12 @@ async function renderAllSessions(c) {
   const cs = Array.isArray(courses)?courses:[];
   const us = users.users||[];
   c.innerHTML = `
-    <div class="page-header"><h2><i class="fa-solid fa-calendar-check" style="color:var(--accent);"></i> All Sessions</h2></div>
+    <div class="page-header">
+      <h2><i class="fa-solid fa-calendar-check" style="color:var(--accent);"></i> All Sessions</h2>
+      <button class="btn btn-danger btn-sm" onclick="endAllStuckSessions()">
+        <i class="fa-solid fa-stop"></i> End Stuck Sessions
+      </button>
+    </div>
     <div class="card">
       ${!ss.length ? '<div class="empty-state"><i class="fa-solid fa-calendar-xmark"></i><p>No sessions yet</p></div>' :
         `<div class="tbl-wrap"><table class="tbl">
@@ -5535,6 +5543,255 @@ async function sendLowAttendanceAlert(branch, section) {
   } catch(e) { toast(e.message || 'Failed to send emails', 'error'); }
 }
 
+// ===================================================================
+// PROMOTE STUDENTS PAGE
+// ===================================================================
+async function renderPromotePage(c) {
+  const opts = await API.get('/users/promote/options').catch(()=>({branches:[],sections:[],semesters:[]}));
+  const semOpts = ['1st','2nd','3rd','4th','5th','6th','7th','8th'];
+  c.innerHTML = `
+    <div class="page-header">
+      <h2><i class="fa-solid fa-arrow-up-right-dots" style="color:var(--success);"></i> Promote Students</h2>
+    </div>
+    <div class="alert alert-info"><i class="fa-solid fa-circle-info"></i>
+      Use this to move students to the next semester. Example: move all Section C 2nd Sem students to 3rd Sem.
+    </div>
+    <div class="card" style="margin-bottom:20px;">
+      <div class="section-title"><i class="fa-solid fa-users"></i> Bulk Promote Section</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Branch *</label>
+          <select class="form-control form-select" id="promo_from_branch">
+            <option value="">-- Select Branch --</option>
+            ${opts.branches.map(b=>`<option value="${b}">${b}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Section *</label>
+          <select class="form-control form-select" id="promo_from_section">
+            <option value="">-- Select Section --</option>
+            ${opts.sections.map(s=>`<option value="${s}">${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Current Semester *</label>
+          <select class="form-control form-select" id="promo_from_sem">
+            <option value="">-- Select --</option>
+            ${semOpts.map(s=>`<option value="${s}">${s} Semester</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <i class="fa-solid fa-arrow-down" style="color:var(--muted);font-size:1.2rem;"></i>
+        <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">New Semester *</label>
+            <select class="form-control form-select" id="promo_to_sem">
+              <option value="">-- Select --</option>
+              ${semOpts.map(s=>`<option value="${s}">${s} Semester</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">New Section <small style="color:var(--muted);">(optional)</small></label>
+            <input class="form-control" id="promo_to_section" placeholder="Leave blank = keep same">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">New Branch <small style="color:var(--muted);">(optional)</small></label>
+            <input class="form-control" id="promo_to_branch" placeholder="Leave blank = keep same">
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-success" onclick="bulkPromote()">
+        <i class="fa-solid fa-arrow-up-right-dots"></i> Promote All Matching Students
+      </button>
+      <div id="promoteResult" style="margin-top:14px;"></div>
+    </div>
+    <div class="card">
+      <div class="section-title"><i class="fa-solid fa-user-pen"></i> Update Individual Student</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Search Student</label>
+          <input class="form-control" id="promoStudentSearch" placeholder="Type name or enrollment no..." oninput="searchStudentsForPromo()">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Filter by Section</label>
+          <select class="form-control form-select" id="promoSectionFilter" onchange="searchStudentsForPromo()">
+            <option value="">All Sections</option>
+            ${opts.sections.map(s=>`<option value="${s}">${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div id="promoStudentList"><div class="empty-state" style="padding:20px;"><i class="fa-solid fa-magnifying-glass"></i><p>Search for a student above</p></div></div>
+    </div>`;
+}
+
+async function bulkPromote() {
+  const fromBranch  = document.getElementById('promo_from_branch').value;
+  const fromSection = document.getElementById('promo_from_section').value;
+  const fromSem     = document.getElementById('promo_from_sem').value;
+  const toSem       = document.getElementById('promo_to_sem').value;
+  const toSection   = document.getElementById('promo_to_section').value.trim();
+  const toBranch    = document.getElementById('promo_to_branch').value.trim();
+  const result      = document.getElementById('promoteResult');
+  if (!fromBranch||!fromSection||!fromSem||!toSem) { toast('Fill all required fields','warning'); return; }
+  if (!confirm(`Promote ALL students in ${fromBranch} Section ${fromSection} from ${fromSem} to ${toSem}?`)) return;
+  try {
+    const data = await API.post('/users/promote/bulk', {
+      from_branch: fromBranch, from_section: fromSection, from_semester: fromSem,
+      to_semester: toSem, to_section: toSection||null, to_branch: toBranch||null,
+    });
+    toast(`Promoted ${data.promoted} students!`, 'success');
+    result.innerHTML = `<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i>
+      <strong>${data.promoted} students promoted</strong> to ${toSem} semester!
+      ${data.students.slice(0,5).map(s=>`<br>&nbsp;&nbsp;- ${s.name} (${s.inst_id})`).join('')}
+      ${data.students.length>5?`<br>&nbsp;&nbsp;...and ${data.students.length-5} more`:''}</div>`;
+  } catch(e) {
+    toast(e.message||'Failed','error');
+    result.innerHTML=`<div class="alert alert-warning">${e.message}</div>`;
+  }
+}
+
+let _promoSearchTimer = null;
+function searchStudentsForPromo() {
+  clearTimeout(_promoSearchTimer);
+  _promoSearchTimer = setTimeout(async () => {
+    const search  = document.getElementById('promoStudentSearch').value.trim();
+    const section = document.getElementById('promoSectionFilter').value;
+    const wrap    = document.getElementById('promoStudentList');
+    if (!search && !section) {
+      wrap.innerHTML = '<div class="empty-state" style="padding:20px;"><i class="fa-solid fa-magnifying-glass"></i><p>Search for a student above</p></div>';
+      return;
+    }
+    wrap.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+    try {
+      let url = '/users?role=student&limit=30';
+      if (search)  url += `&search=${encodeURIComponent(search)}`;
+      if (section) url += `&section=${encodeURIComponent(section)}`;
+      const data = await API.get(url);
+      const students = data.users||[];
+      if (!students.length) { wrap.innerHTML='<div class="empty-state" style="padding:16px;"><p>No students found</p></div>'; return; }
+      wrap.innerHTML = `<div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Name</th><th>Enrollment</th><th>Section</th><th>Semester</th><th>Branch</th><th>Lab Batch</th><th>Actions</th></tr></thead>
+        <tbody>${students.map(s=>`<tr>
+          <td><strong>${s.full_name}</strong></td>
+          <td><code>${s.inst_id}</code></td>
+          <td>${s.section||'-'}</td>
+          <td>${s.semester||'-'}</td>
+          <td style="font-size:.78rem;">${s.branch||'-'}</td>
+          <td>${s.sub_section||'-'}</td>
+          <td style="display:flex;gap:5px;">
+            <button class="btn btn-primary btn-sm" onclick="openEditStudentModal(${s.id},'${s.full_name.replace(/'/g,'')}','${s.section||''}','${s.semester||''}','${s.sub_section||''}','${(s.branch||'').replace(/'/g,'')}')">
+              <i class="fa-solid fa-pen"></i> Edit
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal(${s.id},'${s.full_name.replace(/'/g,'')}')">
+              <i class="fa-solid fa-key"></i> Reset PWD
+            </button>
+          </td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+    } catch(e) { wrap.innerHTML=`<div class="alert alert-warning">${e.message}</div>`; }
+  }, 400);
+}
+
+function openEditStudentModal(id, name, section, semester, subsection, branch) {
+  const ex = document.getElementById('editStudentModal'); if (ex) ex.remove();
+  const semOpts = ['1st','2nd','3rd','4th','5th','6th','7th','8th'];
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay show'; modal.id = 'editStudentModal';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:520px;">
+      <h3><i class="fa-solid fa-user-pen" style="color:var(--primary);"></i> Edit: ${name}</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Section</label>
+          <select class="form-control form-select" id="es_section">
+            ${['A','B','C','D','E','F'].map(s=>`<option value="${s}" ${s===section?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semester</label>
+          <select class="form-control form-select" id="es_semester">
+            ${semOpts.map(s=>`<option value="${s}" ${s===semester?'selected':''}>${s} Semester</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Branch</label>
+        <input class="form-control" id="es_branch" value="${branch}" placeholder="e.g. CSE (AI-ML-DL)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Lab Batch / Sub-section <small style="color:var(--muted);">(e.g. A1, A2 - leave blank if none)</small></label>
+        <input class="form-control" id="es_subsection" value="${subsection}" placeholder="Leave blank if not in a lab batch">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('editStudentModal').remove()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditStudent(${id})"><i class="fa-solid fa-save"></i> Save Changes</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+}
+
+async function saveEditStudent(id) {
+  const section  = document.getElementById('es_section').value;
+  const semester = document.getElementById('es_semester').value;
+  const branch   = document.getElementById('es_branch').value.trim();
+  const subsec   = document.getElementById('es_subsection').value.trim();
+  try {
+    await API.post(`/users/${id}/promote`, {
+      section: section||null, semester: semester||null,
+      branch: branch||null, sub_section: subsec||null,
+    });
+    toast('Student updated!', 'success');
+    document.getElementById('editStudentModal').remove();
+    searchStudentsForPromo();
+  } catch(e) { toast(e.message||'Update failed','error'); }
+}
+
+function openResetPasswordModal(id, name) {
+  const ex = document.getElementById('resetPwdModal'); if (ex) ex.remove();
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay show'; modal.id = 'resetPwdModal';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:400px;">
+      <h3><i class="fa-solid fa-key" style="color:var(--accent);"></i> Reset Password: ${name}</h3>
+      <div class="form-group">
+        <label class="form-label">New Password *</label>
+        <input class="form-control" id="rp_pwd" type="password" placeholder="Minimum 6 characters">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password *</label>
+        <input class="form-control" id="rp_pwd2" type="password" placeholder="Repeat password">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('resetPwdModal').remove()">Cancel</button>
+        <button class="btn btn-accent" onclick="doResetPassword(${id})"><i class="fa-solid fa-key"></i> Reset Password</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+}
+
+async function doResetPassword(id) {
+  const pwd  = document.getElementById('rp_pwd').value;
+  const pwd2 = document.getElementById('rp_pwd2').value;
+  if (!pwd||pwd.length<6) { toast('Password must be at least 6 characters','warning'); return; }
+  if (pwd!==pwd2) { toast('Passwords do not match','error'); return; }
+  try {
+    await API.post(`/auth/admin/reset-password/${id}`, { new_password: pwd });
+    toast('Password reset successfully!', 'success');
+    document.getElementById('resetPwdModal').remove();
+  } catch(e) { toast(e.message||'Reset failed','error'); }
+}
+
+async function endAllStuckSessions() {
+  if (!confirm('End all sessions that have been live for more than 4 hours?')) return;
+  try {
+    const data = await API.post('/sessions/admin/end-all-stuck');
+    toast(`Ended ${data.ended} stuck sessions`, data.ended>0?'success':'info');
+    adminNav('sessions');
+  } catch(e) { toast(e.message||'Failed','error'); }
+}
 
 
 </script>
