@@ -2618,27 +2618,188 @@ async function approveAll() {
 }
 
 async function renderCourses(c) {
-  const courses = await API.get('/courses').catch(()=>[]);
-  cachedCourses = Array.isArray(courses)?courses:[];
+  const bySem = await API.get('/courses/by-semester').catch(()=>({}));
+  const allCourses = Object.values(bySem).flat();
+  cachedCourses = allCourses;
+
+  const semKeys = Object.keys(bySem).sort((a,b)=>{
+    const na = parseInt(a)||0, nb = parseInt(b)||0; return na-nb;
+  });
+
   c.innerHTML = `
     <div class="page-header">
       <h2><i class="fa-solid fa-book" style="color:var(--accent);"></i> Courses</h2>
-      <button class="btn btn-accent" onclick="openModal('addCourseModal')"><i class="fa-solid fa-plus"></i> Add Course</button>
+      <div class="btn-group">
+        <button class="btn btn-outline btn-sm" onclick="downloadCourseTemplate()">
+          <i class="fa-solid fa-download"></i> Download Template
+        </button>
+        <button class="btn btn-success btn-sm" onclick="document.getElementById('courseUploadInput').click()">
+          <i class="fa-solid fa-file-excel"></i> Bulk Upload Excel
+        </button>
+        <button class="btn btn-accent btn-sm" onclick="openAddCourseModal()">
+          <i class="fa-solid fa-plus"></i> Add Single
+        </button>
+      </div>
     </div>
-    <div class="card">
-      ${!cachedCourses.length ? '<div class="empty-state"><i class="fa-solid fa-book-open"></i><p>No courses yet</p></div>' :
-        `<div class="tbl-wrap"><table class="tbl">
-          <thead><tr><th>Code</th><th>Course Name</th><th>Department</th><th>Credits</th><th>Actions</th></tr></thead>
-          <tbody>${cachedCourses.map(co=>`<tr>
-            <td><code>${co.code}</code></td>
-            <td><strong>${co.name}</strong></td>
-            <td>${co.department||'-'}</td>
-            <td>${co.credits}</td>
-            <td><button class="btn btn-danger btn-sm" onclick="deleteCourse(${co.id},'${co.name}')"><i class="fa-solid fa-trash"></i></button></td>
-          </tr>`).join('')}</tbody>
-        </table></div>`}
-    </div>`;
+    <input type="file" id="courseUploadInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="bulkUploadCourses(this)">
+
+    <!-- Upload result -->
+    <div id="courseUploadResult"></div>
+
+    <!-- Courses grouped by semester -->
+    ${!allCourses.length
+      ? '<div class="card"><div class="empty-state"><i class="fa-solid fa-book-open"></i><p>No courses yet. Upload Excel or add manually.</p></div></div>'
+      : semKeys.map(sem => `
+        <div class="card" style="margin-bottom:14px;">
+          <div class="section-title">
+            <i class="fa-solid fa-graduation-cap" style="color:var(--primary);"></i>
+            ${sem} Semester
+            <span style="font-size:.75rem;color:var(--muted);font-weight:400;margin-left:8px;">${bySem[sem].length} subjects</span>
+          </div>
+          <div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Code</th><th>Subject Name</th><th>Type</th><th>Credits</th><th>Actions</th></tr></thead>
+            <tbody>${bySem[sem].map(co=>`<tr>
+              <td><code>${co.code}</code></td>
+              <td><strong>${co.name}</strong></td>
+              <td><span class="badge ${co.course_type==='lab'?'bg-orange':'bg-blue'}">${co.course_type||'theory'}</span></td>
+              <td>${co.credits||3}</td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteCourse(${co.id},'${co.name.replace(/'/g,'')}')">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </td>
+            </tr>`).join('')}</tbody>
+          </table></div>
+        </div>`).join('')
+    }`;
 }
+
+async function downloadCourseTemplate() {
+  try {
+    const res = await fetch(`${API.base}/courses/template`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('sas_token')}` }
+    });
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'courses_template.xlsx';
+    a.click();
+    toast('Template downloaded!', 'success');
+  } catch(e) { toast('Download failed', 'error'); }
+}
+
+async function bulkUploadCourses(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const resultDiv = document.getElementById('courseUploadResult');
+  resultDiv.innerHTML = '<div class="alert alert-info"><i class="fa-solid fa-spinner fa-spin"></i> Uploading...</div>';
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API.base}/courses/bulk-upload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('sas_token')}` },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Upload failed');
+
+    resultDiv.innerHTML = `<div class="alert alert-success">
+      <i class="fa-solid fa-circle-check"></i>
+      <strong>${data.added} courses added!</strong>
+      ${data.skipped > 0 ? `<br>${data.skipped} duplicates skipped.` : ''}
+    </div>`;
+    toast(`${data.added} courses uploaded!`, 'success');
+    await renderCourses(document.getElementById('adminContent'));
+  } catch(e) {
+    resultDiv.innerHTML = `<div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation"></i> ${e.message}</div>`;
+    toast(e.message, 'error');
+  }
+  input.value = '';
+}
+
+function openAddCourseModal() {
+  const ex = document.getElementById('addSingleCourseModal');
+  if (ex) ex.remove();
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay show';
+  modal.id = 'addSingleCourseModal';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:480px;">
+      <h3><i class="fa-solid fa-book" style="color:var(--accent);"></i> Add Single Course</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Course Code *</label>
+          <input class="form-control" id="sc_code" placeholder="e.g. EAS211" oninput="this.value=this.value.toUpperCase(); detectSemFromCode()">
+          <small id="sc_sem_hint" style="color:var(--success);font-size:.75rem;margin-top:3px;display:none;">
+            <i class="fa-solid fa-magic-wand-sparkles"></i> Auto-detected: <strong id="sc_sem_val"></strong> Semester
+          </small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Credits</label>
+          <input class="form-control" id="sc_credits" type="number" value="3" min="1" max="6">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Subject Name *</label>
+        <input class="form-control" id="sc_name" placeholder="e.g. Engineering Mathematics-II">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-control form-select" id="sc_type">
+          <option value="theory">Theory</option>
+          <option value="lab">Lab / Practical</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('addSingleCourseModal').remove()">Cancel</button>
+        <button class="btn btn-accent" onclick="saveSingleCourse()"><i class="fa-solid fa-save"></i> Add Course</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+}
+
+function detectSemFromCode() {
+  const code = document.getElementById('sc_code').value.trim();
+  const hint = document.getElementById('sc_sem_hint');
+  const val  = document.getElementById('sc_sem_val');
+  if (code.length >= 4) {
+    const ch = code[3];
+    if (ch >= '1' && ch <= '8') {
+      const semNames = ['','1st','2nd','3rd','4th','5th','6th','7th','8th'];
+      val.textContent = semNames[parseInt(ch)] || ch;
+      hint.style.display = 'block';
+      return;
+    }
+  }
+  hint.style.display = 'none';
+}
+
+async function saveSingleCourse() {
+  const code    = document.getElementById('sc_code').value.trim().toUpperCase();
+  const name    = document.getElementById('sc_name').value.trim();
+  const credits = parseInt(document.getElementById('sc_credits').value)||3;
+  const type    = document.getElementById('sc_type').value;
+  if (!code||!name) { toast('Code and name required','warning'); return; }
+  try {
+    await API.post('/courses', { code, name, credits, course_type: type });
+    document.getElementById('addSingleCourseModal').remove();
+    toast(`Course "${name}" added!`, 'success');
+    await renderCourses(document.getElementById('adminContent'));
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function deleteCourse(id, name) {
+  if (!confirm(`Delete course "${name}"?`)) return;
+  try {
+    await API.delete(`/courses/${id}`);
+    toast('Course deleted','warning');
+    await renderCourses(document.getElementById('adminContent'));
+  } catch(e) { toast(e.message,'error'); }
+}
+
 
 /* Course modal - branch/section helpers */
 function updateCourseBranches() {
@@ -2711,253 +2872,476 @@ async function deleteCourse(id, name) {
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 async function renderTimetable(c) {
-  const [slots, courses, faculty] = await Promise.all([
-    API.get('/timetable').catch(()=>[]),
-    API.get('/courses').catch(()=>[]),
+  // Load branches/sections from students for dropdowns
+  const [faculty, opts] = await Promise.all([
     API.get('/users?role=faculty&limit=200').catch(()=>({users:[]})),
+    API.get('/users/promote/options').catch(()=>({branches:[],sections:[],semesters:[]})),
   ]);
-  const slotList  = Array.isArray(slots) ? slots : [];
-  const courseList= Array.isArray(courses) ? courses : [];
-  const facList   = faculty.users || [];
+  const facList  = faculty.users || [];
+  const branches = opts.branches || [];
+  const sections = ['A','B','C','D','E'];
+  const semOpts  = ['1st','2nd','3rd','4th','5th','6th','7th','8th'];
 
-  // Group slots by day - handle both 'Monday' and 'monday' from API
-  const byDay = {};
-  DAYS.forEach(d => byDay[d] = slotList.filter(s => {
-    const slotDay = (s.day_of_week||'').toLowerCase().trim();
-    const compareDay = d.toLowerCase().trim();
-    return slotDay === compareDay;
-  }));
+  // Get saved filter state
+  const savedBranch  = window._ttBranch  || branches[0] || '';
+  const savedSection = window._ttSection || sections[0] || 'A';
+  const savedSem     = window._ttSem     || '2nd';
 
   c.innerHTML = `
     <div class="page-header">
-      <h2><i class="fa-solid fa-calendar-days" style="color:var(--accent);"></i> Timetable Management</h2>
-      <button class="btn btn-accent" onclick="openAddSlotModal()"><i class="fa-solid fa-plus"></i> Add Slot</button>
-    </div>
-    <div class="alert alert-info">
-      <i class="fa-solid fa-circle-info"></i>
-      <strong>How it works:</strong> Admin creates timetable slots here.
-      Faculty see their slots and click <strong>Go Live</strong> to start attendance.
-      Students see their class timetable and get notified when a session goes live.
-    </div>
-
-    <!-- Filter bar -->
-    <div class="card" style="margin-bottom:16px;padding:14px;">
-      <div class="search-bar" style="margin-bottom:0;">
-        <select class="form-control form-select" id="ttBranchFilter" onchange="filterTimetable()" style="max-width:200px;">
-          <option value="">All Branches</option>
-          ${[...new Set(slotList.map(s=>s.branch||'').filter(Boolean))].map(b=>`<option>${b}</option>`).join('')}
-        </select>
-        <select class="form-control form-select" id="ttSectionFilter" onchange="filterTimetable()" style="max-width:130px;">
-          <option value="">All Sections</option>
-          <option>A</option><option>B</option><option>C</option><option>D</option>
-        </select>
-        <select class="form-control form-select" id="ttFacFilter" onchange="filterTimetable()" style="max-width:200px;">
-          <option value="">All Faculty</option>
-          ${facList.map(f=>`<option value="${f.id}">${f.full_name}</option>`).join('')}
-        </select>
+      <h2><i class="fa-solid fa-calendar-days" style="color:var(--accent);"></i> Timetable Builder</h2>
+      <div class="btn-group">
+        <button class="btn btn-outline btn-sm" onclick="checkConflicts()">
+          <i class="fa-solid fa-triangle-exclamation"></i> Check Conflicts
+        </button>
+        <button class="btn btn-success btn-sm" onclick="openCopyTimetableModal()">
+          <i class="fa-solid fa-copy"></i> Copy to Section
+        </button>
       </div>
     </div>
 
-    <!-- Timetable grid by day -->
-    <div id="ttGrid">
-      ${DAYS.map(day => `
-        <div class="card" style="margin-bottom:14px;">
-          <div class="section-title" style="color:var(--primary);">
-            <i class="fa-solid fa-calendar-day"></i> ${day}
-            <span style="font-size:.75rem;color:var(--muted);font-weight:400;margin-left:8px;">${byDay[day].length} class${byDay[day].length!==1?'es':''}</span>
-          </div>
-          ${!byDay[day].length
-            ? `<div style="color:var(--muted);font-size:.85rem;padding:8px 0;">No classes scheduled</div>`
-            : `<div class="tbl-wrap"><table class="tbl">
-                <thead><tr><th>Time</th><th>Course</th><th>Branch</th><th>Section</th><th>Sem</th><th>Faculty</th><th>Room</th><th>Actions</th></tr></thead>
-                <tbody>
-                  ${byDay[day].map(sl => `<tr class="tt-row" data-branch="${sl.branch||''}" data-section="${sl.section||''}" data-fac="${sl.faculty_id||''}">
-                    <td><strong>${sl.start_time} - ${sl.end_time}</strong></td>
-                    <td>${sl.course_name||'?'}</td>
-                    <td><span class="chip">${sl.branch||'-'}</span></td>
-                    <td><span class="badge bg-blue">Sec ${sl.section||'-'}</span>${sl.sub_section?` <span class="badge bg-orange">Batch ${sl.sub_section}</span>`:''}</td>
-                    <td>${sl.semester||'-'}</td>
-                    <td>${sl.faculty_name||'-'}</td>
-                    <td>${sl.room||'-'}</td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteSlot(${sl.id})"><i class="fa-solid fa-trash"></i></button></td>
-                  </tr>`).join('')}
-                </tbody>
-              </table></div>`
-          }
-        </div>`).join('')}
+    <!-- Section selector -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Branch *</label>
+          <select class="form-control form-select" id="tt_branch" onchange="loadTimetableGrid()">
+            ${branches.map(b=>`<option value="${b}" ${b===savedBranch?'selected':''}>${b}</option>`).join('')}
+            <option value="__custom__">+ Type branch...</option>
+          </select>
+          <input class="form-control" id="tt_branch_custom" placeholder="Type branch name..."
+            style="display:none;margin-top:6px;border-color:var(--accent);"
+            oninput="window._ttBranch=this.value" onblur="loadTimetableGrid()">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Section *</label>
+          <select class="form-control form-select" id="tt_section" onchange="loadTimetableGrid()">
+            ${sections.map(s=>`<option value="${s}" ${s===savedSection?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Semester *</label>
+          <select class="form-control form-select" id="tt_sem" onchange="loadTimetableGrid()">
+            ${semOpts.map(s=>`<option value="${s}" ${s===savedSem?'selected':''}>${s} Semester</option>`).join('')}
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="loadTimetableGrid()">
+          <i class="fa-solid fa-table"></i> Load Grid
+        </button>
+      </div>
     </div>
 
-    <!-- Add Slot Modal -->
-    <div class="modal-overlay" id="addSlotModal">
-      <div class="modal-box" style="max-width:580px;">
-        <h3><i class="fa-solid fa-calendar-plus" style="color:var(--accent);"></i> Add Timetable Slot</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Day *</label>
-            <select class="form-control form-select" id="sl_day">
-              ${DAYS.map(d=>`<option>${d}</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Course *</label>
-            <select class="form-control form-select" id="sl_course">
-              <option value="">- Select -</option>
-              ${courseList.map(co=>`<option value="${co.id}">${co.name} (${co.code})</option>`).join('')}
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Start Time *</label>
-            <input class="form-control" id="sl_start" type="time" value="09:00">
-          </div>
-          <div class="form-group">
-            <label class="form-label">End Time *</label>
-            <input class="form-control" id="sl_end" type="time" value="10:00">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Faculty *</label>
-            <select class="form-control form-select" id="sl_faculty">
-              <option value="">- Select -</option>
-              ${facList.map(f=>`<option value="${f.id}">${f.full_name} (${f.inst_id})</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Room / Location</label>
-            <input class="form-control" id="sl_room" placeholder="e.g. Room 301, Lab A">
-          </div>
-        </div>
-        <div style="background:#f0f7ff;border-radius:8px;padding:12px;border:1px solid #dbeafe;">
-          <div style="font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;"><i class="fa-solid fa-users"></i> For Which Students?</div>
-          <div class="form-row">
-            <div class="form-group" style="margin-bottom:8px;">
-              <label class="form-label">Course / Program</label>
-              <select class="form-control form-select" id="sl_course_prog" onchange="updateSlBranches()">
-                <option value="">- Select Course -</option>
-                <option value="B.Tech">B.Tech</option>
-                <option value="B.E">B.E</option>
-                <option value="BCA">BCA</option>
-                <option value="MCA">MCA</option>
-                <option value="MBA">MBA</option>
-                <option value="B.Pharma">B.Pharma</option>
-                <option value="M.Tech">M.Tech</option>
-                <option value="B.Sc">B.Sc</option>
-                <option value="M.Sc">M.Sc</option>
-                <option value="BBA">BBA</option>
-                <option value="LLB">LLB</option>
-                <option value="MBBS">MBBS</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom:8px;">
-              <label class="form-label">Branch / Specialization</label>
-              <select class="form-control form-select" id="sl_branch">
-                <option value="">- Select branch -</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom:8px;">
-              <label class="form-label">Section</label>
-              <select class="form-control form-select" id="sl_section">
-                <option value="">All Sections</option>
-                <option>A</option><option>B</option><option>C</option><option>D</option>
-              </select>
-            </div>
-          </div>
-          <!-- Sub-section for labs -->
-          <div class="form-group" style="margin-bottom:8px;">
-            <label class="form-label">
-              Sub-section / Lab Batch
-              <span style="font-weight:400;color:var(--muted);font-size:.78rem;">(optional - only for lab classes)</span>
-            </label>
-            <input class="form-control" id="sl_subsection" placeholder="e.g. A1 or A2 - leave blank for theory/all students"
-              style="border-color:var(--border);"
-              oninput="document.getElementById('sl_subsection_hint').style.display=this.value?'block':'none';document.getElementById('sl_subsection_val').textContent=this.value.toUpperCase();">
-            <div id="sl_subsection_hint" style="display:none;margin-top:4px;padding:6px 10px;background:#fef3c7;border-radius:6px;font-size:.78rem;color:#92400e;">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-              Only students with batch <strong id="sl_subsection_val"></strong> can mark attendance for this slot.
-            </div>
-          </div>
-          <div class="form-row" style="margin-bottom:0;">
-            <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label">Semester</label>
-              <select class="form-control form-select" id="sl_semester">
-                <option value="">All Semesters</option>
-                <option>1st</option><option>2nd</option><option>3rd</option><option>4th</option>
-                <option>5th</option><option>6th</option><option>7th</option><option>8th</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label">Course Type</label>
-              <select class="form-control form-select" id="sl_coursetype">
-                <option value="">Any</option>
-                <option>B.Tech</option><option>BCA</option><option>MCA</option>
-                <option>MBA</option><option>B.Pharma</option><option>M.Tech</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline" onclick="document.getElementById('addSlotModal').classList.remove('show')">Cancel</button>
-          <button class="btn btn-accent" onclick="saveSlot()"><i class="fa-solid fa-save"></i> Add to Timetable</button>
-        </div>
+    <!-- Conflicts result -->
+    <div id="ttConflictResult"></div>
+
+    <!-- Visual grid -->
+    <div id="ttGridWrap">
+      <div class="empty-state card">
+        <i class="fa-solid fa-calendar-days" style="font-size:2rem;"></i>
+        <p>Select Branch, Section and Semester above then click Load Grid</p>
       </div>
     </div>`;
 
-  // Store data for filtering
-  window._ttSlots = slotList;
+  // Store faculty for slot modal
+  window._ttFacList = facList;
+
+  // Handle custom branch
+  document.getElementById('tt_branch').addEventListener('change', function() {
+    const custom = document.getElementById('tt_branch_custom');
+    custom.style.display = this.value === '__custom__' ? 'block' : 'none';
+    if (this.value !== '__custom__') loadTimetableGrid();
+  });
+
+  // Auto-load grid if we have saved state
+  if (savedBranch && savedSection && savedSem) loadTimetableGrid();
 }
 
-function filterTimetable() {
-  const branch  = document.getElementById('ttBranchFilter')?.value  || '';
-  const section = document.getElementById('ttSectionFilter')?.value || '';
-  const fac     = document.getElementById('ttFacFilter')?.value     || '';
-  document.querySelectorAll('.tt-row').forEach(row => {
-    const rb = row.dataset.branch  || '';
-    const rs = row.dataset.section || '';
-    const rf = row.dataset.fac     || '';
-    const show = (!branch  || rb === branch)
-              && (!section || rs === section)
-              && (!fac     || rf === fac);
-    row.style.display = show ? '' : 'none';
+async function loadTimetableGrid() {
+  const branchSel = document.getElementById('tt_branch');
+  let branch = branchSel.value === '__custom__'
+    ? document.getElementById('tt_branch_custom').value.trim()
+    : branchSel.value;
+  const section = document.getElementById('tt_section').value;
+  const sem     = document.getElementById('tt_sem').value;
+
+  if (!branch || !section || !sem) { toast('Select branch, section and semester','warning'); return; }
+
+  // Save state
+  window._ttBranch  = branch;
+  window._ttSection = section;
+  window._ttSem     = sem;
+
+  const wrap = document.getElementById('ttGridWrap');
+  wrap.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+
+  try {
+    const data = await API.get(`/timetable/grid?branch=${encodeURIComponent(branch)}&section=${encodeURIComponent(section)}&semester=${encodeURIComponent(sem)}`);
+    const grid      = data.grid || {};
+    const timeSlots = data.time_slots || [];
+    const days      = data.days || [];
+
+    const DAY_LABELS = {
+      monday:'Monday', tuesday:'Tuesday', wednesday:'Wednesday',
+      thursday:'Thursday', friday:'Friday', saturday:'Saturday'
+    };
+
+    // Build visual grid table
+    let html = `
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:14px 16px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-weight:700;font-size:1rem;">
+            <i class="fa-solid fa-table"></i>
+            ${branch} &nbsp;&middot;&nbsp; Section ${section} &nbsp;&middot;&nbsp; ${sem} Semester
+          </div>
+          <div style="font-size:.8rem;opacity:.8;">Click any cell to add/edit a class</div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;min-width:900px;">
+            <thead>
+              <tr style="background:var(--bg);">
+                <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:var(--muted);font-weight:600;border:1px solid var(--border);min-width:90px;">Day / Time</th>
+                ${timeSlots.map(ts=>`
+                  <th style="padding:10px 8px;text-align:center;font-size:.75rem;color:var(--muted);font-weight:600;border:1px solid var(--border);min-width:120px;">
+                    ${ts}
+                  </th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${days.map(day=>`
+                <tr>
+                  <td style="padding:10px 12px;font-weight:700;font-size:.85rem;color:var(--primary);background:var(--bg);border:1px solid var(--border);white-space:nowrap;">
+                    ${DAY_LABELS[day]||day}
+                  </td>
+                  ${timeSlots.map(ts=>{
+                    const slot = grid[day]?.[ts];
+                    const [st, et] = ts.split('-');
+                    if (slot) {
+                      const isLab = slot.course_type === 'lab';
+                      const bg = isLab ? '#fff3e0' : '#e8f4fd';
+                      const border = isLab ? '#f08e1b' : '#1a3c6e';
+                      return `<td style="padding:4px;border:1px solid var(--border);">
+                        <div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:6px 8px;cursor:pointer;position:relative;"
+                             onclick="openSlotEditor('${day}','${st}','${et}',${slot.id},'${branch}','${section}','${sem}')">
+                          <div style="font-size:.78rem;font-weight:700;color:${border};line-height:1.2;">${slot.course_code}</div>
+                          <div style="font-size:.72rem;color:var(--text);margin:2px 0;line-height:1.3;">${slot.course_name}</div>
+                          <div style="font-size:.68rem;color:var(--muted);">${slot.faculty_name}</div>
+                          ${slot.room?`<div style="font-size:.65rem;color:var(--muted);">${slot.room}</div>`:''}
+                          ${slot.sub_section?`<span style="font-size:.65rem;background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;">Batch ${slot.sub_section}</span>`:''}
+                          <button onclick="event.stopPropagation();deleteSlot(${slot.id})"
+                            style="position:absolute;top:3px;right:3px;background:none;border:none;color:#e63946;cursor:pointer;font-size:.7rem;padding:2px;">
+                            <i class="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                      </td>`;
+                    } else {
+                      return `<td style="padding:4px;border:1px solid var(--border);">
+                        <div style="height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;color:var(--muted);font-size:1.2rem;transition:.15s;"
+                             onmouseover="this.style.background='var(--bg)'"
+                             onmouseout="this.style.background=''"
+                             onclick="openSlotEditor('${day}','${st}','${et}',null,'${branch}','${section}','${sem}')">
+                          <i class="fa-solid fa-plus"></i>
+                        </div>
+                      </td>`;
+                    }
+                  }).join('')}
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <!-- Legend -->
+        <div style="padding:10px 16px;display:flex;gap:16px;border-top:1px solid var(--border);flex-wrap:wrap;">
+          <span style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted);">
+            <span style="width:12px;height:12px;background:#e8f4fd;border-left:3px solid #1a3c6e;border-radius:2px;display:inline-block;"></span> Theory
+          </span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted);">
+            <span style="width:12px;height:12px;background:#fff3e0;border-left:3px solid #f08e1b;border-radius:2px;display:inline-block;"></span> Lab
+          </span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted);">
+            <i class="fa-solid fa-plus" style="color:var(--muted);"></i> Click to add class
+          </span>
+        </div>
+      </div>`;
+
+    wrap.innerHTML = html;
+  } catch(e) {
+    wrap.innerHTML = `<div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation"></i> ${e.message}</div>`;
+  }
+}
+
+//    Slot Editor Modal                                                         
+async function openSlotEditor(day, startTime, endTime, slotId, branch, section, semester) {
+  const ex = document.getElementById('slotEditorModal'); if (ex) ex.remove();
+
+  // Load courses filtered by semester
+  const bySem = await API.get('/courses/by-semester').catch(()=>({}));
+  // Detect semester number from string e.g. "2nd" -> "2"
+  const semNum = semester.replace(/[^0-9]/g, '');
+  // Filter courses where 4th char of code matches semester number
+  const semCourses = Object.values(bySem).flat().filter(co => {
+    if (!co.code || co.code.length < 4) return true;
+    return co.code[3] === semNum;
+  });
+
+  const facList = window._ttFacList || [];
+  const DAY_LABELS = {
+    monday:'Monday', tuesday:'Tuesday', wednesday:'Wednesday',
+    thursday:'Thursday', friday:'Friday', saturday:'Saturday'
+  };
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay show';
+  modal.id = 'slotEditorModal';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:520px;">
+      <h3>
+        <i class="fa-solid fa-${slotId?'pen':'plus'}-circle" style="color:var(--accent);"></i>
+        ${slotId ? 'Edit' : 'Add'} Class   ${DAY_LABELS[day]||day} ${startTime}
+      </h3>
+      <div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:.85rem;color:var(--muted);">
+        <i class="fa-solid fa-calendar-day"></i>
+        <strong>${DAY_LABELS[day]||day}</strong> &nbsp;&middot;&nbsp;
+        <strong>${startTime} - ${endTime}</strong> &nbsp;&middot;&nbsp;
+        Section <strong>${section}</strong> &nbsp;&middot;&nbsp;
+        <strong>${semester}</strong> Semester
+      </div>
+      <div class="form-group">
+        <label class="form-label">Subject *
+          <span style="font-size:.72rem;color:var(--muted);font-weight:400;">(showing ${semCourses.length} subjects for ${semester} sem)</span>
+        </label>
+        <select class="form-control form-select" id="se_course">
+          <option value="">-- Select Subject --</option>
+          ${semCourses.map(co=>`<option value="${co.id}" data-type="${co.course_type||'theory'}">${co.code} - ${co.name}</option>`).join('')}
+          <optgroup label="-- All Subjects --">
+            ${Object.values(bySem).flat().filter(co=>!semCourses.find(s=>s.id===co.id)).map(co=>`<option value="${co.id}" data-type="${co.course_type||'theory'}">${co.code} - ${co.name}</option>`).join('')}
+          </optgroup>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Teacher *</label>
+        <select class="form-control form-select" id="se_faculty">
+          <option value="">-- Select Teacher --</option>
+          ${facList.map(f=>`<option value="${f.id}">${f.full_name} (${f.inst_id})</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Room / Location</label>
+          <input class="form-control" id="se_room" placeholder="e.g. Room 301, Lab A">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Lab Batch <small style="color:var(--muted);">(optional)</small></label>
+          <input class="form-control" id="se_subsection" placeholder="e.g. A1, A2   blank = all">
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:10px;">
+        <label class="form-label">Class Type</label>
+        <div style="display:flex;gap:10px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="se_type" value="theory" checked> Theory
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="se_type" value="lab"> Lab
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('slotEditorModal').remove()">Cancel</button>
+        ${slotId ? `<button class="btn btn-danger btn-sm" onclick="deleteSlotFromEditor(${slotId})"><i class="fa-solid fa-trash"></i> Delete</button>` : ''}
+        <button class="btn btn-accent" onclick="saveSlotFromEditor(${slotId||'null'},'${day}','${startTime}','${endTime}','${branch}','${section}','${semester}')">
+          <i class="fa-solid fa-save"></i> ${slotId ? 'Update' : 'Add to Timetable'}
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+
+  // Auto-set type when course selected
+  document.getElementById('se_course').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const type = opt.dataset.type || 'theory';
+    document.querySelector(`input[name="se_type"][value="${type}"]`).checked = true;
   });
 }
 
-function openAddSlotModal() {
-  document.getElementById('addSlotModal').classList.add('show');
-}
+async function saveSlotFromEditor(slotId, day, startTime, endTime, branch, section, semester) {
+  const courseId  = parseInt(document.getElementById('se_course').value);
+  const facultyId = parseInt(document.getElementById('se_faculty').value);
+  const room      = document.getElementById('se_room').value.trim();
+  const subsec    = document.getElementById('se_subsection').value.trim().toUpperCase();
+  const type      = document.querySelector('input[name="se_type"]:checked')?.value || 'theory';
 
-async function saveSlot() {
-  const day       = document.getElementById('sl_day').value;
-  const courseId  = parseInt(document.getElementById('sl_course').value);
-  const start     = document.getElementById('sl_start').value;
-  const end       = document.getElementById('sl_end').value;
-  const facultyId = parseInt(document.getElementById('sl_faculty').value);
-  const room      = document.getElementById('sl_room').value.trim();
-  const branch      = document.getElementById('sl_branch').value;
-  const section     = document.getElementById('sl_section').value;
-  const subSection  = (document.getElementById('sl_subsection')?.value || '').trim().toUpperCase();
-  const semester    = document.getElementById('sl_semester').value;
-  const courseType  = document.getElementById('sl_coursetype').value;
+  if (!courseId)  { toast('Please select a subject', 'warning'); return; }
+  if (!facultyId) { toast('Please select a teacher', 'warning'); return; }
 
-  if (!courseId)  { toast('Please select a course','warning'); return; }
-  if (!facultyId) { toast('Please select a faculty','warning'); return; }
-  if (!start||!end){ toast('Please set start and end time','warning'); return; }
-  if (start >= end){ toast('End time must be after start time','warning'); return; }
+  const payload = {
+    course_id:   courseId,
+    faculty_id:  facultyId,
+    day_of_week: day,
+    start_time:  startTime,
+    end_time:    endTime,
+    room:        room || null,
+    branch,  section,  semester,
+    sub_section:  subsec || null,
+    course_type:  type,
+  };
 
   try {
-    await API.post('/timetable', {
-      course_id: courseId, faculty_id: facultyId,
-      day_of_week: day, start_time: start, end_time: end,
-      room, branch, section,
-      sub_section: subSection || null,
-      semester, course_type: courseType,
+    if (slotId) {
+      await API.patch(`/timetable/${slotId}`, payload);
+      toast('Class updated!', 'success');
+    } else {
+      await API.post('/timetable', payload);
+      toast('Class added!', 'success');
+    }
+    document.getElementById('slotEditorModal').remove();
+    await loadTimetableGrid();
+  } catch(e) { toast(e.message || 'Failed', 'error'); }
+}
+
+async function deleteSlotFromEditor(id) {
+  if (!confirm('Remove this class from timetable?')) return;
+  try {
+    await API.delete(`/timetable/${id}`);
+    document.getElementById('slotEditorModal').remove();
+    toast('Class removed', 'warning');
+    await loadTimetableGrid();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function deleteSlot(id) {
+  if (!confirm('Remove this class from timetable?')) return;
+  try {
+    await API.delete(`/timetable/${id}`);
+    toast('Class removed', 'warning');
+    await loadTimetableGrid();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+//    Copy Timetable Modal                                                       
+function openCopyTimetableModal() {
+  const ex = document.getElementById('copyTTModal'); if (ex) ex.remove();
+  const branch  = window._ttBranch  || '';
+  const section = window._ttSection || '';
+  const sem     = window._ttSem     || '';
+  const sections = ['A','B','C','D','E'];
+  const semOpts  = ['1st','2nd','3rd','4th','5th','6th','7th','8th'];
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay show';
+  modal.id = 'copyTTModal';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:500px;">
+      <h3><i class="fa-solid fa-copy" style="color:var(--success);"></i> Copy Timetable</h3>
+      <div class="alert alert-info" style="margin-bottom:14px;">
+        <i class="fa-solid fa-circle-info"></i>
+        Copies all subjects and time slots. Teachers will be marked as
+        <strong>Unassigned</strong>   you must assign them after copying.
+      </div>
+      <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;">Copy FROM</div>
+        <div style="font-size:.9rem;"><strong>${branch}</strong> &nbsp;&middot;&nbsp; Section <strong>${section}</strong> &nbsp;&middot;&nbsp; <strong>${sem}</strong></div>
+      </div>
+      <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:14px;">
+        <div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;">Copy TO</div>
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Section</label>
+            <select class="form-control form-select" id="copy_to_section">
+              ${sections.filter(s=>s!==section).map(s=>`<option value="${s}">${s}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Semester</label>
+            <select class="form-control form-select" id="copy_to_sem">
+              ${semOpts.map(s=>`<option value="${s}" ${s===sem?'selected':''}>${s} Semester</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px;margin-bottom:0;">
+          <label class="form-label">Branch</label>
+          <input class="form-control" id="copy_to_branch" value="${branch}" placeholder="Same branch or type new">
+        </div>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.88rem;">
+          <input type="checkbox" id="copy_teachers">
+          Also copy teachers (uncheck if teachers are different)
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('copyTTModal').remove()">Cancel</button>
+        <button class="btn btn-success" onclick="executeCopyTimetable('${branch}','${section}','${sem}')">
+          <i class="fa-solid fa-copy"></i> Copy Timetable
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+}
+
+async function executeCopyTimetable(fromBranch, fromSection, fromSem) {
+  const toBranch  = document.getElementById('copy_to_branch').value.trim();
+  const toSection = document.getElementById('copy_to_section').value;
+  const toSem     = document.getElementById('copy_to_sem').value;
+  const copyTeach = document.getElementById('copy_teachers').checked;
+
+  if (!toBranch||!toSection||!toSem) { toast('Fill all fields','warning'); return; }
+  if (!confirm(`Copy ${fromBranch} Sec ${fromSection} timetable to ${toBranch} Sec ${toSection}?\nThis will replace any existing slots in the destination.`)) return;
+
+  try {
+    const data = await API.post('/timetable/copy', {
+      from_branch: fromBranch, from_section: fromSection, from_semester: fromSem,
+      to_branch: toBranch, to_section: toSection, to_semester: toSem,
+      copy_teachers: copyTeach,
     });
-    document.getElementById('addSlotModal').classList.remove('show');
-    toast(' Timetable slot added!','success');
+    document.getElementById('copyTTModal').remove();
+    toast(`Copied ${data.copied} slots! ${!copyTeach?'Now assign teachers.':''}`, 'success');
+    // Switch view to the new section
+    window._ttBranch  = toBranch;
+    window._ttSection = toSection;
+    window._ttSem     = toSem;
     await renderTimetable(document.getElementById('adminContent'));
+  } catch(e) { toast(e.message||'Copy failed','error'); }
+}
+
+//    Check Conflicts                                                            
+async function checkConflicts() {
+  const branch  = window._ttBranch  || '';
+  const section = window._ttSection || '';
+  const sem     = window._ttSem     || '';
+  const result  = document.getElementById('ttConflictResult');
+
+  try {
+    const data = await API.get(`/timetable/conflicts?branch=${encodeURIComponent(branch)}&semester=${encodeURIComponent(sem)}`);
+    if (data.total === 0) {
+      result.innerHTML = `<div class="alert alert-success" style="margin-bottom:12px;">
+        <i class="fa-solid fa-circle-check"></i> No teacher conflicts found!
+      </div>`;
+    } else {
+      result.innerHTML = `<div class="alert alert-warning" style="margin-bottom:12px;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <strong>${data.total} conflict${data.total>1?'s':''} found!</strong>
+        ${data.conflicts.map(c=>`
+          <div style="margin-top:8px;padding:8px;background:#fff;border-radius:6px;font-size:.82rem;">
+            <strong>${c.teacher}</strong> is assigned to
+            <strong>${c.sections.join(' and ')}</strong>
+            at <strong>${c.day} ${c.time}</strong>
+            (${c.subjects.join(' / ')})
+          </div>`).join('')}
+      </div>`;
+    }
+    // Auto-clear after 10 seconds
+    setTimeout(()=>{ if(result) result.innerHTML=''; }, 10000);
   } catch(e) { toast(e.message,'error'); }
 }
+
+// Keep old openAddSlotModal for compatibility
+async function openAddSlotModal() {
+  openSlotEditor('monday','09:30','10:30',null,
+    window._ttBranch||'', window._ttSection||'A', window._ttSem||'2nd');
+}
+
+
 
 async function deleteSlot(id) {
   if (!confirm('Remove this slot from the timetable?')) return;
