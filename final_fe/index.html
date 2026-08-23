@@ -3116,8 +3116,10 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
           </optgroup>
         </select>
       </div>
-      <div class="form-group">
-        <label class="form-label">Teacher *</label>
+      <div class="form-group" id="se_faculty_group">
+        <label class="form-label">Teacher *
+          <span id="se_faculty_optional" style="display:none;font-weight:400;color:var(--muted);font-size:.75rem;"> (not required for free classes)</span>
+        </label>
         <select class="form-control form-select" id="se_faculty">
           <option value="">-- Select Teacher --</option>
           ${facList.map(f=>`<option value="${f.id}">${f.full_name} (${f.inst_id})</option>`).join('')}
@@ -3155,23 +3157,50 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
 
-  // Auto-set type when course selected
+  // Auto-set type when course selected + hide teacher for free classes
+  const FREE_CODES = ['LIBRARY','TINKERER','MENTOR','CODING','FREE'];
   document.getElementById('se_course').addEventListener('change', function() {
-    const opt = this.options[this.selectedIndex];
+    const opt  = this.options[this.selectedIndex];
     const type = opt.dataset.type || 'theory';
-    document.querySelector(`input[name="se_type"][value="${type}"]`).checked = true;
+    const code = opt.text.split(' - ')[0].trim().toUpperCase();
+    const isFree = FREE_CODES.includes(code) || opt.text.toLowerCase().includes('library')
+      || opt.text.toLowerCase().includes('tinkerer') || opt.text.toLowerCase().includes('mentor');
+
+    // Toggle teacher field
+    const facGroup = document.getElementById('se_faculty_group');
+    if (facGroup) {
+      if (isFree) {
+        facGroup.style.display = 'none';
+        document.getElementById('se_faculty').value = '';
+      } else {
+        facGroup.style.display = 'block';
+      }
+    }
+
+    // Set type
+    const typeInput = document.querySelector(`input[name="se_type"][value="${type}"]`);
+    if (typeInput) typeInput.checked = true;
   });
 }
 
 async function saveSlotFromEditor(slotId, day, startTime, endTime, branch, section, semester) {
   const courseId  = parseInt(document.getElementById('se_course').value);
-  const facultyId = parseInt(document.getElementById('se_faculty').value);
+  const facultyId = parseInt(document.getElementById('se_faculty').value) || null;
   const room      = document.getElementById('se_room').value.trim();
   const subsec    = document.getElementById('se_subsection').value.trim().toUpperCase();
   const type      = document.querySelector('input[name="se_type"]:checked')?.value || 'theory';
 
-  if (!courseId)  { toast('Please select a subject', 'warning'); return; }
-  if (!facultyId) { toast('Please select a teacher', 'warning'); return; }
+  if (!courseId) { toast('Please select a subject', 'warning'); return; }
+
+  // Check if free class — teacher not required
+  const FREE_CODES = ['LIBRARY','TINKERER','MENTOR','CODING','FREE'];
+  const selOpt = document.getElementById('se_course').options[document.getElementById('se_course').selectedIndex];
+  const selCode = selOpt ? selOpt.text.split(' - ')[0].trim().toUpperCase() : '';
+  const isFree  = FREE_CODES.includes(selCode);
+
+  if (!facultyId && !isFree) {
+    toast('Please select a teacher for this class', 'warning'); return;
+  }
 
   const payload = {
     course_id:   courseId,
