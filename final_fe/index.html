@@ -1233,7 +1233,7 @@ button, input, select, textarea { font-family: inherit; }
       </div>
       <div class="form-group">
         <label class="form-label">Credits</label>
-        <input class="form-control" id="mc_credits" type="number" value="3" min="1" max="6">
+        <input class="form-control" id="mc_credits" type="number" value="3" min="0" max="6">
       </div>
     </div>
     <!-- Branch with free text option -->
@@ -2662,7 +2662,7 @@ async function renderCourses(c) {
               <td><code>${co.code}</code></td>
               <td><strong>${co.name}</strong></td>
               <td><span class="badge ${co.course_type==='lab'?'bg-orange':'bg-blue'}">${co.course_type||'theory'}</span></td>
-              <td>${co.credits||3}</td>
+              <td>${co.credits ?? 3}</td>
               <td>
                 <button class="btn btn-danger btn-sm" onclick="deleteCourse(${co.id},'${co.name.replace(/'/g,'')}')">
                   <i class="fa-solid fa-trash"></i>
@@ -2738,7 +2738,7 @@ function openAddCourseModal() {
         </div>
         <div class="form-group">
           <label class="form-label">Credits</label>
-          <input class="form-control" id="sc_credits" type="number" value="3" min="1" max="6">
+          <input class="form-control" id="sc_credits" type="number" value="3" min="0" max="6">
         </div>
       </div>
       <div class="form-group">
@@ -2780,7 +2780,8 @@ function detectSemFromCode() {
 async function saveSingleCourse() {
   const code    = document.getElementById('sc_code').value.trim().toUpperCase();
   const name    = document.getElementById('sc_name').value.trim();
-  const credits = parseInt(document.getElementById('sc_credits').value)||3;
+  const scCreditsRaw = document.getElementById('sc_credits').value;
+  const credits = scCreditsRaw === '' ? 3 : (parseInt(scCreditsRaw) || 0);
   const type    = document.getElementById('sc_type').value;
   if (!code||!name) { toast('Code and name required','warning'); return; }
   try {
@@ -2839,7 +2840,8 @@ async function saveNewCourse() {
   const branch  = getCourseBranch();
   const section = document.getElementById('mc_section')?.value || '';
   const semester= document.getElementById('mc_semester')?.value || '';
-  const credits = parseInt(document.getElementById('mc_credits').value)||3;
+  const mcCreditsRaw = document.getElementById('mc_credits').value;
+  const credits = mcCreditsRaw === '' ? 3 : (parseInt(mcCreditsRaw) || 0);
   if (!code||!name) { toast('Code and name are required','warning'); return; }
   if (!prog)        { toast('Please select a program','warning'); return; }
   const fullBranch = branch ? `${prog} - ${branch}` : prog;
@@ -3013,14 +3015,15 @@ async function loadTimetableGrid() {
                     ${DAY_LABELS[day]||day}
                   </td>
                   ${timeSlots.map(ts=>{
-                    const slot = grid[day]?.[ts];
+                    // grid[day][ts] is now a LIST of slots — a cell can legitimately
+                    // hold more than one class (e.g. parallel lab batches C1 / C2).
+                    const cellSlots = grid[day]?.[ts] || [];
                     const [st, et] = ts.split('-');
-                    if (slot) {
+                    const chips = cellSlots.map(slot => {
                       const isLab = slot.course_type === 'lab';
                       const bg = isLab ? '#fff3e0' : '#e8f4fd';
                       const border = isLab ? '#f08e1b' : '#1a3c6e';
-                      return `<td style="padding:4px;border:1px solid var(--border);">
-                        <div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:6px 8px;cursor:pointer;position:relative;"
+                      return `<div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:6px 8px;cursor:pointer;position:relative;margin-bottom:4px;"
                              onclick="openSlotEditor('${day}','${st}','${et}',${slot.id},'${branch}','${section}','${sem}')">
                           <div style="font-size:.78rem;font-weight:700;color:${border};line-height:1.2;">${slot.course_code}</div>
                           <div style="font-size:.72rem;color:var(--text);margin:2px 0;line-height:1.3;">${slot.course_name}</div>
@@ -3031,18 +3034,17 @@ async function loadTimetableGrid() {
                             style="position:absolute;top:3px;right:3px;background:none;border:none;color:#e63946;cursor:pointer;font-size:.7rem;padding:2px;">
                             <i class="fa-solid fa-xmark"></i>
                           </button>
-                        </div>
-                      </td>`;
-                    } else {
-                      return `<td style="padding:4px;border:1px solid var(--border);">
-                        <div style="height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;color:var(--muted);font-size:1.2rem;transition:.15s;"
+                        </div>`;
+                    }).join('');
+                    // Always show a small "add another" control so a second/third
+                    // parallel batch can be added into the same day/time cell.
+                    const addMore = `<div style="height:${cellSlots.length?'22px':'60px'};display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;color:var(--muted);font-size:${cellSlots.length?'.9rem':'1.2rem'};transition:.15s;"
                              onmouseover="this.style.background='var(--bg)'"
                              onmouseout="this.style.background=''"
                              onclick="openSlotEditor('${day}','${st}','${et}',null,'${branch}','${section}','${sem}')">
                           <i class="fa-solid fa-plus"></i>
-                        </div>
-                      </td>`;
-                    }
+                        </div>`;
+                    return `<td style="padding:4px;border:1px solid var(--border);vertical-align:top;">${chips}${addMore}</td>`;
                   }).join('')}
                 </tr>`).join('')}
             </tbody>
