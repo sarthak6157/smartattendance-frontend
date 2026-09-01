@@ -2664,6 +2664,9 @@ async function renderCourses(c) {
               <td><span class="badge ${co.course_type==='lab'?'bg-orange':'bg-blue'}">${co.course_type||'theory'}</span></td>
               <td>${co.credits ?? 3}</td>
               <td>
+                <button class="btn btn-outline btn-sm" onclick='openEditCourseModal(${co.id})' style="margin-right:4px;">
+                  <i class="fa-solid fa-pen"></i>
+                </button>
                 <button class="btn btn-danger btn-sm" onclick="deleteCourse(${co.id},'${co.name.replace(/'/g,'')}')">
                   <i class="fa-solid fa-trash"></i>
                 </button>
@@ -2788,6 +2791,63 @@ async function saveSingleCourse() {
     await API.post('/courses', { code, name, credits, course_type: type });
     document.getElementById('addSingleCourseModal').remove();
     toast(`Course "${name}" added!`, 'success');
+    await renderCourses(document.getElementById('adminContent'));
+  } catch(e) { toast(e.message,'error'); }
+}
+
+function openEditCourseModal(id) {
+  const co = (cachedCourses || []).find(c => c.id === id);
+  if (!co) { toast('Course not found', 'error'); return; }
+  const ex = document.getElementById('editCourseModal');
+  if (ex) ex.remove();
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay show';
+  modal.id = 'editCourseModal';
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:480px;">
+      <h3><i class="fa-solid fa-pen" style="color:var(--accent);"></i> Edit Course</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Course Code</label>
+          <input class="form-control" value="${co.code}" disabled>
+          <small style="color:var(--muted);">Code can't be changed — delete and re-add if needed.</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Credits</label>
+          <input class="form-control" id="ec_credits" type="number" value="${co.credits ?? 3}" min="0" max="6">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Subject Name *</label>
+        <input class="form-control" id="ec_name" value="${co.name.replace(/"/g,'&quot;')}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-control form-select" id="ec_type">
+          <option value="theory" ${co.course_type==='lab'?'':'selected'}>Theory</option>
+          <option value="lab" ${co.course_type==='lab'?'selected':''}>Lab / Practical</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('editCourseModal').remove()">Cancel</button>
+        <button class="btn btn-accent" onclick="saveEditCourse(${co.id})"><i class="fa-solid fa-save"></i> Save Changes</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+}
+
+async function saveEditCourse(id) {
+  const name  = document.getElementById('ec_name').value.trim();
+  const raw   = document.getElementById('ec_credits').value;
+  const credits = raw === '' ? 3 : (parseInt(raw) || 0);
+  const type  = document.getElementById('ec_type').value;
+  if (!name) { toast('Subject name required', 'warning'); return; }
+  try {
+    // course_id/code are required by the CourseCreate schema shape but ignored server-side on PATCH
+    await API.patch(`/courses/${id}`, { course_id: id, code: '', name, credits, course_type: type });
+    document.getElementById('editCourseModal').remove();
+    toast(`Course "${name}" updated!`, 'success');
     await renderCourses(document.getElementById('adminContent'));
   } catch(e) { toast(e.message,'error'); }
 }
