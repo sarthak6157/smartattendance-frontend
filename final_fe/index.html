@@ -1063,7 +1063,7 @@ button, input, select, textarea { font-family: inherit; }
     <h3><i class="fa-solid fa-user-plus" style="color:var(--accent);"></i> Add New User</h3>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="mu_name" placeholder="Full name"></div>
-      <div class="form-group"><label class="form-label">Institution ID *</label><input class="form-control" id="mu_id" placeholder="e.g. STU006 or FAC003"></div>
+      <div class="form-group"><label class="form-label">Institution ID *</label><input class="form-control" id="mu_id" placeholder="e.g. STU006 or TMU003"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Email *</label><input class="form-control" id="mu_email" type="email" placeholder="email@tmu.ac.in"></div>
@@ -2319,12 +2319,12 @@ function filterUsersTable() {
       <td>${u.face_registered?'<span style="color:#2d9e6b;font-size:.82rem;">=</span>':'<span style="color:#9ca3af;font-size:.82rem;">-</span>'}</td>
       <td><span class="badge ${u.status==='active'?'bg-green':u.status==='pending'?'bg-orange':'bg-red'}">${u.status}</span></td>
       <td style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${u.status==='pending'?`<button class="btn btn-success btn-sm" onclick="approveUser(${u.id})"><i class="fa-solid fa-check"></i> Approve</button>`:''}
-        ${u.status==='active'?`<button class="btn btn-outline btn-sm" onclick="setUserStatus(${u.id},'inactive')"><i class="fa-solid fa-ban"></i></button>`:''}
-        ${u.status==='inactive'?`<button class="btn btn-success btn-sm" onclick="setUserStatus(${u.id},'active')"><i class="fa-solid fa-check"></i></button>`:''}
-        <button class="btn btn-outline btn-sm" onclick="openEditUser(${u.id})" title="Edit user"><i class="fa-solid fa-pen"></i></button>
-        <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal(${u.id},'${u.full_name.replace(/'/g,'')}')" title="Reset password"><i class="fa-solid fa-key"></i></button>
-        ${u.id!==currentUser.id?`<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id},'${u.full_name}')"><i class="fa-solid fa-trash"></i></button>`:''}
+        ${u.status==='pending'?`<button class="btn btn-success btn-sm" onclick="approveUser('${u.id}')"><i class="fa-solid fa-check"></i> Approve</button>`:''}
+        ${u.status==='active'?`<button class="btn btn-outline btn-sm" onclick="setUserStatus('${u.id}','inactive')"><i class="fa-solid fa-ban"></i></button>`:''}
+        ${u.status==='inactive'?`<button class="btn btn-success btn-sm" onclick="setUserStatus('${u.id}','active')"><i class="fa-solid fa-check"></i></button>`:''}
+        <button class="btn btn-outline btn-sm" onclick="openEditUser('${u.id}')" title="Edit user"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal('${u.id}','${u.full_name.replace(/'/g,'')}')" title="Reset password"><i class="fa-solid fa-key"></i></button>
+        ${u.id!==currentUser.id?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${u.full_name}')"><i class="fa-solid fa-trash"></i></button>`:''}
       </td>
     </tr>`).join('')}</tbody></table></div>`;
 }
@@ -2365,7 +2365,7 @@ function openEditUser(userId) {
 }
 
 async function saveEditUser() {
-  const id      = parseInt(document.getElementById('eu_id').value);
+  const id      = document.getElementById('eu_id').value;
   const role    = document.getElementById('eu_role_val').value;
   const name    = document.getElementById('eu_name').value.trim();
   const email   = document.getElementById('eu_email').value.trim();
@@ -2592,8 +2592,8 @@ async function renderPending(c) {
             <td>${u.department||'-'}</td>
             <td>${fmt(u.created_at)}</td>
             <td style="display:flex;gap:6px;">
-              <button class="btn btn-success btn-sm" onclick="approveAndRefresh(${u.id})"><i class="fa-solid fa-check"></i> Approve</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteAndRefresh(${u.id},'${u.full_name}')"><i class="fa-solid fa-times"></i> Reject</button>
+              <button class="btn btn-success btn-sm" onclick="approveAndRefresh('${u.id}')"><i class="fa-solid fa-check"></i> Approve</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteAndRefresh('${u.id}','${u.full_name}')"><i class="fa-solid fa-times"></i> Reject</button>
             </td>
           </tr>`).join('')}</tbody>
         </table></div>`}
@@ -3247,7 +3247,7 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
 
 async function saveSlotFromEditor(slotId, day, startTime, endTime, branch, section, semester) {
   const courseId  = parseInt(document.getElementById('se_course').value);
-  const facultyId = parseInt(document.getElementById('se_faculty').value) || null;
+  const facultyId = document.getElementById('se_faculty').value || null;
   const room      = document.getElementById('se_room').value.trim();
   const subsec    = document.getElementById('se_subsection').value.trim().toUpperCase();
   const type      = document.querySelector('input[name="se_type"]:checked')?.value || 'theory';
@@ -4477,7 +4477,7 @@ async function loadAttSheet() {
               '<td><span class="badge '+(status==='present'?'bg-green':status==='late'?'bg-orange':'bg-red')+'">'+status+'</span></td>' +
               '<td style="font-size:.78rem;">'+(rec?.marked_at?fmtDT(rec.marked_at):'-')+'</td>' +
               '<td>'+(isEditable ?
-                '<button class="btn btn-sm '+(status==='present'?'btn-danger':'btn-success')+'" onclick="toggleAtt('+sid+','+stu.id+',\''+status+'\')">'+
+                '<button class="btn btn-sm '+(status==='present'?'btn-danger':'btn-success')+'" onclick="toggleAtt('+sid+',\''+stu.id+'\',\''+status+'\')">'+
                 (status==='present'?'Mark Absent':'Mark Present')+'</button>' :
                 '<span style="color:var(--muted);font-size:.8rem;">Locked</span>'
               )+'</td>' +
@@ -6155,10 +6155,10 @@ function searchStudentsForPromo() {
           <td style="font-size:.78rem;">${s.branch||'-'}</td>
           <td>${s.sub_section||'-'}</td>
           <td style="display:flex;gap:5px;">
-            <button class="btn btn-primary btn-sm" onclick="openEditStudentModal(${s.id},'${s.full_name.replace(/'/g,'')}','${s.section||''}','${s.semester||''}','${s.sub_section||''}','${(s.branch||'').replace(/'/g,'')}')">
+            <button class="btn btn-primary btn-sm" onclick="openEditStudentModal('${s.id}','${s.full_name.replace(/'/g,'')}','${s.section||''}','${s.semester||''}','${s.sub_section||''}','${(s.branch||'').replace(/'/g,'')}')">
               <i class="fa-solid fa-pen"></i> Edit
             </button>
-            <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal(${s.id},'${s.full_name.replace(/'/g,'')}')">
+            <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal('${s.id}','${s.full_name.replace(/'/g,'')}')">
               <i class="fa-solid fa-key"></i> Reset PWD
             </button>
           </td>
@@ -6200,7 +6200,7 @@ function openEditStudentModal(id, name, section, semester, subsection, branch) {
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="document.getElementById('editStudentModal').remove()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveEditStudent(${id})"><i class="fa-solid fa-save"></i> Save Changes</button>
+        <button class="btn btn-primary" onclick="saveEditStudent('${id}')"><i class="fa-solid fa-save"></i> Save Changes</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -6240,7 +6240,7 @@ function openResetPasswordModal(id, name) {
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="document.getElementById('resetPwdModal').remove()">Cancel</button>
-        <button class="btn btn-accent" onclick="doResetPassword(${id})"><i class="fa-solid fa-key"></i> Reset Password</button>
+        <button class="btn btn-accent" onclick="doResetPassword('${id}')"><i class="fa-solid fa-key"></i> Reset Password</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
