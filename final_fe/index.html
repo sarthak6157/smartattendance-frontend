@@ -16,7 +16,57 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js">
+// -- Bulk Timetable Import --
+async function downloadTimetableTemplate() {
+  try {
+    const res = await fetch(API.base + '/timetable/bulk-template', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('sas_token') }
+    });
+    if (!res.ok) throw new Error('Download failed');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'timetable_template.xlsx';
+    a.click();
+    toast('Template downloaded!', 'success');
+  } catch(e) { toast(e.message || 'Download failed', 'error'); }
+}
+
+async function bulkImportTimetable(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const clearExisting = confirm(
+    'Clear existing timetable slots for sections in this file before importing?' + String.fromCharCode(10) +
+    'OK = Clear + Import fresh' + String.fromCharCode(10) +
+    'Cancel = Add to existing'
+  );
+  const wrap = document.getElementById('ttGridWrap');
+  const orig = wrap ? wrap.innerHTML : '';
+  if (wrap) wrap.innerHTML = '<div class="card" style="text-align:center;padding:30px;"><div class="big-spinner" style="margin:0 auto 16px;width:40px;height:40px;border-width:3px;"></div><div style="font-weight:600;">Importing timetable...</div></div>';
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(
+      API.base + '/timetable/bulk-import?clear_existing=' + clearExisting,
+      { method: 'POST', headers: { 'Authorization': 'Bearer ' + localStorage.getItem('sas_token') }, body: formData }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Import failed');
+    const hasErrors = data.errors && data.errors.length > 0;
+    if (wrap) wrap.innerHTML = '<div class="card"><div class="section-title"><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Import Complete</div>' +
+      '<div style="margin-bottom:14px;"><span style="background:#d1fae5;color:#065f46;border-radius:20px;padding:6px 16px;font-size:.88rem;font-weight:600;">' + data.added + ' slots added</span>' +
+      (hasErrors ? ' <span style="background:#fee2e2;color:#991b1b;border-radius:20px;padding:6px 16px;font-size:.88rem;font-weight:600;">' + data.errors.length + ' errors</span>' : '') + '</div>' +
+      (hasErrors ? '<div style="background:#fef3c7;border-radius:8px;padding:12px;margin-bottom:12px;font-size:.78rem;color:#92400e;">' + data.errors.map(function(e){return '- '+e;}).join('<br>') + '</div>' : '') +
+      '<button class="btn btn-primary" onclick="loadTimetableGrid()"><i class="fa-solid fa-table"></i> View Timetable</button></div>';
+    toast(data.added + ' slots imported!', 'success');
+  } catch(e) {
+    if (wrap) wrap.innerHTML = orig;
+    toast(e.message || 'Import failed', 'error');
+  }
+  input.value = '';
+}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js" defer onerror="console.warn('face-api.js failed to load')"></script>
 <style>
 /* ═══════════════════════════════════════════════
@@ -2956,6 +3006,13 @@ async function renderTimetable(c) {
         <button class="btn btn-outline btn-sm" onclick="checkConflicts()">
           <i class="fa-solid fa-triangle-exclamation"></i> Check Conflicts
         </button>
+        <button class="btn btn-outline btn-sm" onclick="downloadTimetableTemplate()">
+          <i class="fa-solid fa-download"></i> Download Template
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('ttBulkInput').click()">
+          <i class="fa-solid fa-file-excel"></i> Bulk Import Excel
+        </button>
+        <input type="file" id="ttBulkInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="bulkImportTimetable(this)">
         <button class="btn btn-success btn-sm" onclick="openCopyTimetableModal()">
           <i class="fa-solid fa-copy"></i> Copy to Section
         </button>
