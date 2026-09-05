@@ -1720,7 +1720,6 @@ const API = (() => {
   };
 
   return {
-    _base,
     base,
     get:    (path)         => fetch(`${base}${path}`, { headers: headers() }).then(handle),
     post:   (path, body)   => fetch(`${base}${path}`, { method:'POST',   headers: headers(), body: JSON.stringify(body) }).then(handle),
@@ -1731,7 +1730,7 @@ const API = (() => {
 
 /* =========================== STATE =========================== */
 let currentUser = null;
-let loginRole   = 'student';
+var loginRole   = 'student';  // var for hoisting — setLoginRole runs before this line
 let qrInterval  = null;
 let camStream   = null;
 let scanState   = {};
@@ -2664,10 +2663,10 @@ async function renderCourses(c) {
               <td><span class="badge ${co.course_type==='lab'?'bg-orange':'bg-blue'}">${co.course_type||'theory'}</span></td>
               <td>${co.credits ?? 3}</td>
               <td>
-                <button class="btn btn-outline btn-sm" onclick='openEditCourseModal(${co.id})' style="margin-right:4px;">
+                <button class="btn btn-outline btn-sm" onclick='openEditCourseModal("${co.id}")' style="margin-right:4px;">
                   <i class="fa-solid fa-pen"></i>
                 </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteCourse(${co.id},'${co.name.replace(/'/g,'')}')">
+                <button class="btn btn-danger btn-sm" onclick="deleteCourse('${co.id}','${co.name.replace(/'/g,'')}')">
                   <i class="fa-solid fa-trash"></i>
                 </button>
               </td>
@@ -2830,7 +2829,7 @@ function openEditCourseModal(id) {
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="document.getElementById('editCourseModal').remove()">Cancel</button>
-        <button class="btn btn-accent" onclick="saveEditCourse(${co.id})"><i class="fa-solid fa-save"></i> Save Changes</button>
+        <button class="btn btn-accent" onclick="saveEditCourse('${co.id}')"><i class="fa-solid fa-save"></i> Save Changes</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -2956,13 +2955,6 @@ async function renderTimetable(c) {
         <button class="btn btn-outline btn-sm" onclick="checkConflicts()">
           <i class="fa-solid fa-triangle-exclamation"></i> Check Conflicts
         </button>
-        <button class="btn btn-outline btn-sm" onclick="downloadTimetableTemplate()">
-          <i class="fa-solid fa-download"></i> Download Template
-        </button>
-        <button class="btn btn-primary btn-sm" onclick="document.getElementById('ttBulkInput').click()">
-          <i class="fa-solid fa-file-excel"></i> Bulk Import Excel
-        </button>
-        <input type="file" id="ttBulkInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="bulkImportTimetable(this)">
         <button class="btn btn-success btn-sm" onclick="openCopyTimetableModal()">
           <i class="fa-solid fa-copy"></i> Copy to Section
         </button>
@@ -3253,7 +3245,7 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
 }
 
 async function saveSlotFromEditor(slotId, day, startTime, endTime, branch, section, semester) {
-  const courseId  = parseInt(document.getElementById('se_course').value);
+  const courseId  = document.getElementById('se_course').value;
   const facultyId = document.getElementById('se_faculty').value || null;
   const room      = document.getElementById('se_room').value.trim();
   const subsec    = document.getElementById('se_subsection').value.trim().toUpperCase();
@@ -4211,7 +4203,7 @@ async function openExtraClassModal() {
 }
 
 async function saveExtraClass() {
-  const courseId = parseInt(document.getElementById('ec_course').value);
+  const courseId = document.getElementById('ec_course').value;
   const title    = document.getElementById('ec_title').value.trim();
   const branch   = getEcBranch();  // exact 'Course - Branch' format from dropdown
   const section  = document.getElementById('ec_section').value.trim();
@@ -4516,7 +4508,7 @@ async function openCreateSession() {
 }
 
 async function saveNewSession() {
-  const courseId = parseInt(document.getElementById('ms_course').value);
+  const courseId = document.getElementById('ms_course').value;
   const title    = document.getElementById('ms_title').value.trim()||'Lecture';
   const location = document.getElementById('ms_location').value.trim();
   const dt       = document.getElementById('ms_datetime').value;
@@ -6277,7 +6269,6 @@ async function endAllStuckSessions() {
 
 
 
-// -- Bulk Timetable Import --
 async function downloadTimetableTemplate() {
   try {
     const res = await fetch(API.base + '/timetable/bulk-template', {
