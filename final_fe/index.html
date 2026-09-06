@@ -2001,16 +2001,18 @@ async function adminNav(section) {
 }
 
 async function renderAdminDashboard(c) {
-  const [users, sessions, courses] = await Promise.all([
-    API.get('/users?limit=500').catch(()=>({total:0,users:[]})),
+  const [studentsRes, facultyRes, sessions, courses] = await Promise.all([
+    API.get('/users?role=student&limit=500').catch(()=>({total:0,users:[]})),
+    API.get('/users?role=faculty&limit=500').catch(()=>({total:0,users:[]})),
     API.get('/sessions?limit=500').catch(()=>({total:0,sessions:[]})),
     API.get('/courses').catch(()=>[]),
   ]);
   cachedCourses = Array.isArray(courses) ? courses : [];
-  const allUsers    = users.users||[];
+  const students   = studentsRes.users||[];
+  const faculty    = facultyRes.users||[];
+  const allUsers   = [...students, ...faculty]
+    .sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));  // for "recently added" + pending count below
   const allSessions = sessions.sessions||[];
-  const students  = allUsers.filter(u=>u.role==='student');
-  const faculty   = allUsers.filter(u=>u.role==='faculty');
   const pending   = allUsers.filter(u=>u.status==='pending');
   const active    = allSessions.filter(s=>s.status==='active');
 
@@ -2966,6 +2968,13 @@ async function renderTimetable(c) {
         <button class="btn btn-outline btn-sm" onclick="checkConflicts()">
           <i class="fa-solid fa-triangle-exclamation"></i> Check Conflicts
         </button>
+        <button class="btn btn-outline btn-sm" onclick="downloadTimetableTemplate()">
+          <i class="fa-solid fa-download"></i> Download Template
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('ttBulkInput').click()">
+          <i class="fa-solid fa-file-excel"></i> Bulk Import Excel
+        </button>
+        <input type="file" id="ttBulkInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="bulkImportTimetable(this)">
         <button class="btn btn-success btn-sm" onclick="openCopyTimetableModal()">
           <i class="fa-solid fa-copy"></i> Copy to Section
         </button>
@@ -3459,7 +3468,7 @@ async function renderAllSessions(c) {
   const [sessions, courses, users] = await Promise.all([
     API.get(`/sessions?limit=200&branch=${encodeURIComponent(branch)}&section=${encodeURIComponent(section)}`).catch(()=>({sessions:[]})),
     API.get('/courses').catch(()=>[]),
-    API.get('/users?limit=500').catch(()=>({users:[]})),
+    API.get('/users?role=faculty&limit=500').catch(()=>({users:[]})),
   ]);
   const ss = sessions.sessions||[];
   const cs = Array.isArray(courses)?courses:[];
@@ -3477,7 +3486,7 @@ async function renderAllSessions(c) {
           <thead><tr><th>Title</th><th>Course</th><th>Faculty</th><th>Location</th><th>Scheduled</th><th>Status</th></tr></thead>
           <tbody>${ss.map(s=>{
             const co = cs.find(x=>x.id===s.course_id);
-            const fac = us.find(x=>x.id===s.faculty_id);
+            const fac = us.find(x=>x.inst_id===s.faculty_id);
             return `<tr>
               <td><strong>${s.title}</strong></td>
               <td>${co?.name||'?'} <small style="color:var(--muted);">(${co?.code||''})</small></td>
