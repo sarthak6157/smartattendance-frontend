@@ -2955,6 +2955,13 @@ async function renderTimetable(c) {
         <button class="btn btn-outline btn-sm" onclick="checkConflicts()">
           <i class="fa-solid fa-triangle-exclamation"></i> Check Conflicts
         </button>
+        <button class="btn btn-outline btn-sm" onclick="downloadTimetableTemplate()">
+          <i class="fa-solid fa-download"></i> Download Template
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('ttBulkInput').click()">
+          <i class="fa-solid fa-file-excel"></i> Bulk Import Excel
+        </button>
+        <input type="file" id="ttBulkInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="bulkImportTimetable(this)">
         <button class="btn btn-success btn-sm" onclick="openCopyTimetableModal()">
           <i class="fa-solid fa-copy"></i> Copy to Section
         </button>
