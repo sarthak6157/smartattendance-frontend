@@ -1486,7 +1486,7 @@ async function exportAttendanceCSV(sessionId) {
     const records  = attData.records || [];
     const stuCache = allUsersCache || [];
     const rows = stuCache.map(stu => {
-      const rec = records.find(r => r.student_id === stu.id);
+      const rec = records.find(r => r.student_id === stu.inst_id);
       return [
         stu.full_name, stu.inst_id, stu.branch||'', stu.section||'',
         rec?.status || 'absent', rec?.method || '-',
@@ -1508,7 +1508,7 @@ async function exportReportsCSV() {
     const students = ud.users || [];
     const closed   = (sd.sessions||[]).filter(s=>s.status==='closed');
     const rows = await Promise.all(students.map(async stu => {
-      const att = await API.get(`/attendance/student/${stu.id}?limit=500`).catch(()=>({records:[]}));
+      const att = await API.get(`/attendance/student/${stu.inst_id}?limit=500`).catch(()=>({records:[]}));
       const present = (att.records||[]).filter(r=>r.status==='present').length;
       const pct = closed.length ? Math.round(present/closed.length*100) : 0;
       return [stu.full_name, stu.inst_id, stu.branch||'', stu.section||'',
@@ -1541,7 +1541,7 @@ async function renderDefaulters(c) {
     const closed   = (sd.sessions||[]).filter(s=>s.status==='closed');
 
     const rows = await Promise.all(students.map(async stu => {
-      const att = await API.get(`/attendance/student/${stu.id}?limit=500`).catch(()=>({records:[]}));
+      const att = await API.get(`/attendance/student/${stu.inst_id}?limit=500`).catch(()=>({records:[]}));
       const present = (att.records||[]).filter(r=>r.status==='present').length;
       const pct = closed.length ? Math.round(present/closed.length*100) : 100;
       return { ...stu, present, total: closed.length, pct };
@@ -1654,7 +1654,7 @@ async function approveAll() {
   let approved = 0;
   for (const u of pending) {
     try {
-      await API.patch(`/users/${u.id}/status`, { status: 'active' });
+      await API.patch(`/users/${u.inst_id}/status`, { status: 'active' });
       approved++;
     } catch {}
   }
@@ -1805,13 +1805,7 @@ async function doLogin() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Logging in...';
   try {
-    const data = await API.post('/auth/login', { credential: id, password: pass });
-    // Role check
-    if (data.user.role !== loginRole) {
-      toast(`This ID belongs to a ${data.user.role}, not a ${loginRole}. Please select the correct role tab.`, 'error');
-      btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login';
-      return;
-    }
+    const data = await API.post('/auth/login', { credential: id, password: pass, role: loginRole });
     // Reset rate limit on success
     localStorage.removeItem('sas_login_attempts');
     localStorage.setItem('sas_token', data.access_token);
@@ -2084,13 +2078,22 @@ async function renderUserMgmt(c) {
         <button class="btn btn-success btn-sm" onclick="exportUsersCSV()"><i class="fa-solid fa-download"></i> CSV</button>
       </div>
     </div>
+    <div class="card" style="padding:6px;margin-bottom:14px;">
+      <div style="display:flex;gap:4px;">
+        <button class="usertab-btn" data-tab="student" onclick="switchUserTab('student')"><i class="fa-solid fa-user-graduate"></i> Students</button>
+        <button class="usertab-btn" data-tab="faculty" onclick="switchUserTab('faculty')"><i class="fa-solid fa-chalkboard-user"></i> Faculty</button>
+        <button class="usertab-btn" data-tab="admin"   onclick="switchUserTab('admin')"><i class="fa-solid fa-user-shield"></i> Admins</button>
+      </div>
+    </div>
+    <style>
+      .usertab-btn{flex:1;padding:9px 14px;border:none;background:transparent;border-radius:8px;font-weight:600;font-size:.85rem;color:var(--muted);cursor:pointer;transition:.15s;}
+      .usertab-btn:hover{background:var(--bg);}
+      .usertab-btn.active{background:var(--accent);color:#fff;}
+    </style>
     <div class="card">
       <!-- PRIMARY FILTERS ROW -->
       <div class="search-bar" style="flex-wrap:wrap;gap:8px;">
         <input class="form-control" id="userSearch" placeholder="Search name, ID, email..." style="min-width:200px;flex:1;" oninput="filterUsersTable()">
-        <select class="form-control form-select" id="roleFilter" onchange="onRoleFilterChange()" style="max-width:140px;">
-          <option value="">All Roles</option><option value="student">Students</option><option value="faculty">Faculty</option><option value="admin">Admins</option>
-        </select>
         <select class="form-control form-select" id="statusFilter" onchange="filterUsersTable()" style="max-width:140px;">
           <option value="">All Status</option><option value="active">Active</option><option value="pending">Pending</option><option value="inactive">Inactive</option>
         </select>
@@ -2144,6 +2147,23 @@ async function renderUserMgmt(c) {
       <div id="usersTableBody"><div class="empty-state"><div class="big-spinner" style="margin:0 auto;width:30px;height:30px;border-width:3px;"></div></div></div>
     </div>`;
   await loadUsersTable();
+  updateUserTabStyles();
+}
+
+let currentUserTab = 'student';
+
+function switchUserTab(role) {
+  currentUserTab = role;
+  updateUserTabStyles();
+  const adv = document.getElementById('advancedFilters');
+  if (adv && role !== 'student') adv.style.display = 'none';
+  loadUsersTable();
+}
+
+function updateUserTabStyles() {
+  document.querySelectorAll('.usertab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === currentUserTab);
+  });
 }
 
 let allUsersCache = [];
@@ -2152,7 +2172,7 @@ let _filterOptions = { branches:[], sections:[], semesters:[], courses:[] };
 async function loadUsersTable() {
   try {
     const [data, opts] = await Promise.all([
-      API.get('/users?limit=500'),
+      API.get(`/users?role=${currentUserTab}&limit=500`),
       API.get('/users/filter-options').catch(()=>({ branches:[], sections:[], semesters:[], courses:[] })),
     ]);
     allUsersCache  = data.users || [];
@@ -2176,15 +2196,6 @@ function _populateFilterDropdowns(opts) {
   fill('sectionFilter',  opts.sections  || [], 'All Sections');
   fill('semesterFilter', opts.semesters || [], 'All Semesters');
   fill('courseFilter',   opts.courses   || [], 'All Programs');
-}
-
-function onRoleFilterChange() {
-  const role = document.getElementById('roleFilter')?.value || '';
-  // Show/hide advanced filters only for student role or no role
-  const adv = document.getElementById('advancedFilters');
-  const btn = document.getElementById('advFiltersBtn');
-  if (adv && role === 'faculty') { adv.style.display = 'none'; }
-  filterUsersTable();
 }
 
 function onBranchFilterChange() {
@@ -2249,7 +2260,7 @@ function _renderFilterTags() {
 
 function filterUsersTable() {
   const search   = (document.getElementById('userSearch')?.value||'').toLowerCase().trim();
-  const role     = document.getElementById('roleFilter')?.value||'';
+  const role     = currentUserTab;  // tab replaces the old role dropdown — allUsersCache is already scoped to this role
   const status   = document.getElementById('statusFilter')?.value||'';
   const branch   = (document.getElementById('branchFilter')?.value||'').toLowerCase();
   const section  = document.getElementById('sectionFilter')?.value||'';
@@ -2306,7 +2317,7 @@ function filterUsersTable() {
     ${isStudentView?'<th>Branch</th><th>Sec</th><th>Sem</th>':'<th>Department</th>'}
     <th>Face</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody>${list.map(u=>`<tr>
-      <td>${u.id}</td>
+      <td>${u.id ?? '-'}</td>
       <td><strong>${u.full_name}</strong><br><small style="color:var(--muted);">${u.email}</small></td>
       <td><code>${u.inst_id}</code></td>
       <td><span class="badge ${u.role==='admin'?'bg-red':u.role==='faculty'?'bg-blue':'bg-gray'}">${u.role}</span></td>
@@ -2318,12 +2329,12 @@ function filterUsersTable() {
       <td>${u.face_registered?'<span style="color:#2d9e6b;font-size:.82rem;">=</span>':'<span style="color:#9ca3af;font-size:.82rem;">-</span>'}</td>
       <td><span class="badge ${u.status==='active'?'bg-green':u.status==='pending'?'bg-orange':'bg-red'}">${u.status}</span></td>
       <td style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${u.status==='pending'?`<button class="btn btn-success btn-sm" onclick="approveUser('${u.id}')"><i class="fa-solid fa-check"></i> Approve</button>`:''}
-        ${u.status==='active'?`<button class="btn btn-outline btn-sm" onclick="setUserStatus('${u.id}','inactive')"><i class="fa-solid fa-ban"></i></button>`:''}
-        ${u.status==='inactive'?`<button class="btn btn-success btn-sm" onclick="setUserStatus('${u.id}','active')"><i class="fa-solid fa-check"></i></button>`:''}
-        <button class="btn btn-outline btn-sm" onclick="openEditUser('${u.id}')" title="Edit user"><i class="fa-solid fa-pen"></i></button>
-        <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal('${u.id}','${u.full_name.replace(/'/g,'')}')" title="Reset password"><i class="fa-solid fa-key"></i></button>
-        ${u.id!==currentUser.id?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${u.full_name}')"><i class="fa-solid fa-trash"></i></button>`:''}
+        ${u.status==='pending'?`<button class="btn btn-success btn-sm" onclick="approveUser('${u.inst_id}')"><i class="fa-solid fa-check"></i> Approve</button>`:''}
+        ${u.status==='active'?`<button class="btn btn-outline btn-sm" onclick="setUserStatus('${u.inst_id}','inactive')"><i class="fa-solid fa-ban"></i></button>`:''}
+        ${u.status==='inactive'?`<button class="btn btn-success btn-sm" onclick="setUserStatus('${u.inst_id}','active')"><i class="fa-solid fa-check"></i></button>`:''}
+        <button class="btn btn-outline btn-sm" onclick="openEditUser('${u.inst_id}')" title="Edit user"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal('${u.inst_id}','${u.full_name.replace(/'/g,'')}')" title="Reset password"><i class="fa-solid fa-key"></i></button>
+        ${u.inst_id!==currentUser.inst_id?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.inst_id}','${u.full_name}')"><i class="fa-solid fa-trash"></i></button>`:''}
       </td>
     </tr>`).join('')}</tbody></table></div>`;
 }
@@ -2332,10 +2343,10 @@ function filterUsersTable() {
    EDIT USER - Admin can correct any student/faculty data
 ====================================================== */
 function openEditUser(userId) {
-  const user = (allUsersCache||[]).find(u => u.id === userId);
+  const user = (allUsersCache||[]).find(u => u.inst_id === userId);
   if (!user) { toast('User not found - please reload the page','error'); return; }
 
-  document.getElementById('eu_id').value       = user.id;
+  document.getElementById('eu_id').value       = user.inst_id;
   document.getElementById('eu_role_val').value = user.role;
   document.getElementById('eu_name').value     = user.full_name || '';
   document.getElementById('eu_email').value    = user.email || '';
@@ -2403,7 +2414,7 @@ async function saveEditUser() {
 async function approveUser(id) {
   try {
     await API.patch(`/users/${id}/status`, { status: 'active' });
-    const _u = (allUsersCache||[]).find(x=>x.id===id);
+    const _u = (allUsersCache||[]).find(x=>x.inst_id===id);
     logAudit('APPROVE USER', `Approved ${_u?.full_name||'user'} (${_u?.inst_id||id})`);
     toast('User approved!','success');
     await loadUsersTable();
@@ -2591,8 +2602,8 @@ async function renderPending(c) {
             <td>${u.department||'-'}</td>
             <td>${fmt(u.created_at)}</td>
             <td style="display:flex;gap:6px;">
-              <button class="btn btn-success btn-sm" onclick="approveAndRefresh('${u.id}')"><i class="fa-solid fa-check"></i> Approve</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteAndRefresh('${u.id}','${u.full_name}')"><i class="fa-solid fa-times"></i> Reject</button>
+              <button class="btn btn-success btn-sm" onclick="approveAndRefresh('${u.inst_id}')"><i class="fa-solid fa-check"></i> Approve</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteAndRefresh('${u.inst_id}','${u.full_name}')"><i class="fa-solid fa-times"></i> Reject</button>
             </td>
           </tr>`).join('')}</tbody>
         </table></div>`}
@@ -2610,7 +2621,7 @@ async function deleteAndRefresh(id, name) {
 async function approveAll() {
   const data = await API.get('/users?status=pending&limit=500').catch(()=>({users:[]}));
   const pending = data.users||[];
-  await Promise.all(pending.map(u => API.patch(`/users/${u.id}/status`,{status:'active'}).catch(()=>{})));
+  await Promise.all(pending.map(u => API.patch(`/users/${u.inst_id}/status`,{status:'active'}).catch(()=>{})));
   toast(`${pending.length} users approved!`,'success');
   updatePendingBadge();
   await renderPending(document.getElementById('adminContent'));
@@ -2955,13 +2966,6 @@ async function renderTimetable(c) {
         <button class="btn btn-outline btn-sm" onclick="checkConflicts()">
           <i class="fa-solid fa-triangle-exclamation"></i> Check Conflicts
         </button>
-        <button class="btn btn-outline btn-sm" onclick="downloadTimetableTemplate()">
-          <i class="fa-solid fa-download"></i> Download Template
-        </button>
-        <button class="btn btn-primary btn-sm" onclick="document.getElementById('ttBulkInput').click()">
-          <i class="fa-solid fa-file-excel"></i> Bulk Import Excel
-        </button>
-        <input type="file" id="ttBulkInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="bulkImportTimetable(this)">
         <button class="btn btn-success btn-sm" onclick="openCopyTimetableModal()">
           <i class="fa-solid fa-copy"></i> Copy to Section
         </button>
@@ -3190,7 +3194,7 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
         </label>
         <select class="form-control form-select" id="se_faculty">
           <option value="">-- Select Teacher --</option>
-          ${facList.map(f=>`<option value="${f.id}">${f.full_name} (${f.inst_id})</option>`).join('')}
+          ${facList.map(f=>`<option value="${f.inst_id}">${f.full_name} (${f.inst_id})</option>`).join('')}
         </select>
       </div>
       <div class="form-row">
@@ -3515,7 +3519,7 @@ async function renderReports(c) {
     const tbody = document.getElementById('reportTbody');
     const rows = await Promise.all(students.map(async stu => {
       try {
-        const att = await API.get(`/attendance/student/${stu.id}?limit=500`);
+        const att = await API.get(`/attendance/student/${stu.inst_id}?limit=500`);
         const present = (att.records||[]).filter(a=>a.status==='present').length;
         const p = pct(present, closed.length);
         return `<tr>
@@ -4472,7 +4476,7 @@ async function loadAttSheet() {
         <div class="tbl-wrap"><table class="tbl">
           <thead><tr><th>#</th><th>Name</th><th>Enrollment No.</th><th>Branch</th><th>Sec</th><th>Status</th><th>Time</th><th>${isEditable ? 'Change' : ''}</th></tr></thead>
           <tbody>${students.map((stu,i)=>{
-            const rec = records.find(r=>r.student_id===stu.id);
+            const rec = records.find(r=>r.student_id===stu.inst_id);
             const status = rec?.status || 'absent';
             return '<tr>' +
               '<td>'+(i+1)+'</td>' +
@@ -4483,7 +4487,7 @@ async function loadAttSheet() {
               '<td><span class="badge '+(status==='present'?'bg-green':status==='late'?'bg-orange':'bg-red')+'">'+status+'</span></td>' +
               '<td style="font-size:.78rem;">'+(rec?.marked_at?fmtDT(rec.marked_at):'-')+'</td>' +
               '<td>'+(isEditable ?
-                '<button class="btn btn-sm '+(status==='present'?'btn-danger':'btn-success')+'" onclick="toggleAtt('+sid+',\''+stu.id+'\',\''+status+'\')">'+
+                '<button class="btn btn-sm '+(status==='present'?'btn-danger':'btn-success')+'" onclick="toggleAtt('+sid+',\''+stu.inst_id+'\',\''+status+'\')">'+
                 (status==='present'?'Mark Absent':'Mark Present')+'</button>' :
                 '<span style="color:var(--muted);font-size:.8rem;">Locked</span>'
               )+'</td>' +
@@ -4565,7 +4569,7 @@ async function renderStuDashboard(c) {
 
   // Fetch all data in parallel
   const [attData, sessData, ttData, activeData] = await Promise.all([
-    API.get(`/attendance/student/${currentUser.id}?limit=500`).catch(()=>({records:[]})),
+    API.get(`/attendance/student/${currentUser.inst_id}?limit=500`).catch(()=>({records:[]})),
     API.get(`/sessions?limit=500&branch=${encodeURIComponent(branch)}&section=${encodeURIComponent(section)}`).catch(()=>({sessions:[]})),
     API.get('/timetable').catch(()=>[]),
     API.get(`/sessions/active?branch=${encodeURIComponent(branch)}&section=${encodeURIComponent(section)}`).catch(()=>[]),
@@ -5027,7 +5031,7 @@ async function renderStuScan(c) {
   }
 
   // Check if already marked
-  const attData = await API.get(`/attendance/student/${currentUser.id}?limit=200`).catch(()=>({records:[]}));
+  const attData = await API.get(`/attendance/student/${currentUser.inst_id}?limit=200`).catch(()=>({records:[]}));
   const alreadyMarked = (attData.records||[]).find(a=>a.session_id===active.id&&a.status==='present');
   if (alreadyMarked) {
     const co = (await API.get('/courses').catch(()=>[])).find(x=>x.id===active.course_id);
@@ -5428,10 +5432,10 @@ async function renderStuHistory(c) {
   const branch  = currentUser.branch  || currentUser.department || '';
   const section = currentUser.section || '';
   const [attData, sessions, courses, insights] = await Promise.all([
-    API.get(`/attendance/student/${currentUser.id}?limit=500`).catch(()=>({records:[]})),
+    API.get(`/attendance/student/${currentUser.inst_id}?limit=500`).catch(()=>({records:[]})),
     API.get(`/sessions?limit=200&branch=${encodeURIComponent(branch)}&section=${encodeURIComponent(section)}`).catch(()=>({sessions:[]})),
     API.get('/courses').catch(()=>[]),
-    API.get(`/attendance/insights/student/${currentUser.id}`).catch(()=>null),
+    API.get(`/attendance/insights/student/${currentUser.inst_id}`).catch(()=>null),
   ]);
   const att    = attData.records||[];
   const ss     = sessions.sessions||[];
@@ -5514,7 +5518,7 @@ async function renderStuHistory(c) {
 
 async function exportStudentExcel() {
   try {
-    const url = `${API.base}/attendance/export/student/${currentUser.id}?format=excel`;
+    const url = `${API.base}/attendance/export/student/${currentUser.inst_id}?format=excel`;
     const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sas_token')}` } });
     if (!res.ok) throw new Error('Export failed');
     const blob = await res.blob();
@@ -5528,7 +5532,7 @@ async function exportStudentExcel() {
 
 async function exportStudentCSV() {
   try {
-    const url = `${API.base}/attendance/export/student/${currentUser.id}?format=csv`;
+    const url = `${API.base}/attendance/export/student/${currentUser.inst_id}?format=csv`;
     const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sas_token')}` } });
     if (!res.ok) throw new Error('Export failed');
     const blob = await res.blob();
@@ -5734,7 +5738,7 @@ async function captureRegistrationFace() {
     const face_descriptor = JSON.stringify(Array.from(detection.descriptor));
     if (status) status.textContent = 'Saving to server...';
     // Save to backend
-    const updated = await API.post('/users/' + currentUser.id + '/register-face', { image_b64, face_descriptor });
+    const updated = await API.post('/users/' + currentUser.inst_id + '/register-face', { image_b64, face_descriptor });
     // Update currentUser
     currentUser.face_registered = true;
     currentUser.face_embedding  = face_descriptor;
@@ -6161,10 +6165,10 @@ function searchStudentsForPromo() {
           <td style="font-size:.78rem;">${s.branch||'-'}</td>
           <td>${s.sub_section||'-'}</td>
           <td style="display:flex;gap:5px;">
-            <button class="btn btn-primary btn-sm" onclick="openEditStudentModal('${s.id}','${s.full_name.replace(/'/g,'')}','${s.section||''}','${s.semester||''}','${s.sub_section||''}','${(s.branch||'').replace(/'/g,'')}')">
+            <button class="btn btn-primary btn-sm" onclick="openEditStudentModal('${s.inst_id}','${s.full_name.replace(/'/g,'')}','${s.section||''}','${s.semester||''}','${s.sub_section||''}','${(s.branch||'').replace(/'/g,'')}')">
               <i class="fa-solid fa-pen"></i> Edit
             </button>
-            <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal('${s.id}','${s.full_name.replace(/'/g,'')}')">
+            <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal('${s.inst_id}','${s.full_name.replace(/'/g,'')}')">
               <i class="fa-solid fa-key"></i> Reset PWD
             </button>
           </td>
