@@ -3150,6 +3150,104 @@ async function loadTimetableGrid() {
 }
 
 //    Slot Editor Modal                                                         
+/* ==================================================================
+   SEARCHABLE SELECT — turns a long <select> into a type-to-filter
+   dropdown. The underlying <select> is kept (just hidden) so every
+   existing document.getElementById(id).value / onchange listener
+   keeps working unchanged — this only adds a search UI on top.
+   Call it AFTER the select's <option>s are in place (options are
+   snapshotted once, on call).
+   ================================================================== */
+function makeSearchableSelect(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select || select.tagName !== 'SELECT') return;
+
+  // Modals that stay in the DOM across multiple opens (rather than being
+  // rebuilt from scratch each time) reuse the same <select> — re-running
+  // this on an already-wrapped select must refresh its options, not stack
+  // a second wrapper/input on top.
+  if (select._searchableRefresh) { select._searchableRefresh(); return; }
+
+  let options = Array.from(select.options).map(o => ({
+    value: o.value, text: o.textContent, disabled: o.disabled,
+  }));
+
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'relative';
+  select.parentNode.insertBefore(wrapper, select);
+  wrapper.appendChild(select);
+  select.style.display = 'none';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = select.className || 'form-control';
+  input.placeholder = 'Type to search...';
+  input.autocomplete = 'off';
+  const initSel = options.find(o => o.value === select.value);
+  input.value = initSel ? initSel.text : '';
+  wrapper.insertBefore(input, select);
+
+  const list = document.createElement('div');
+  list.style.cssText = 'position:absolute;top:100%;left:0;right:0;max-height:240px;overflow-y:auto;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 16px rgba(0,0,0,.15);z-index:2000;display:none;margin-top:2px;';
+  wrapper.appendChild(list);
+
+  function renderList(filter) {
+    const f = filter.trim().toLowerCase();
+    const matches = options.filter(o => o.value === '' || o.text.toLowerCase().includes(f));
+    if (!matches.length) {
+      list.innerHTML = '<div style="padding:10px 12px;color:var(--muted);font-size:.85rem;">No matches</div>';
+      return;
+    }
+    list.innerHTML = matches.map(o => `
+      <div class="searchable-opt" data-value="${o.value.replace(/"/g,'&quot;')}"
+           style="padding:8px 12px;cursor:pointer;font-size:.88rem;${o.disabled?'color:var(--muted);font-weight:700;cursor:default;':''}"
+           onmouseover="if(!this.dataset.disabled)this.style.background='var(--bg)'"
+           onmouseout="this.style.background=''"
+           ${o.disabled?'data-disabled="1"':''}>${o.text}</div>`).join('');
+  }
+
+  list.addEventListener('click', e => {
+    const row = e.target.closest('.searchable-opt');
+    if (!row || row.dataset.disabled) return;
+    select.value = row.dataset.value;
+    input.value  = row.textContent;
+    list.style.display = 'none';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+
+  input.addEventListener('focus', () => { renderList(''); list.style.display = 'block'; });
+  input.addEventListener('input', () => { renderList(input.value); list.style.display = 'block'; });
+  input.addEventListener('blur', () => {
+    // Delay so a click on a list row registers before we hide it
+    setTimeout(() => {
+      list.style.display = 'none';
+      // If what's typed doesn't match a real option, snap back to the current select value's text
+      const cur = options.find(o => o.value === select.value);
+      input.value = cur ? cur.text : '';
+    }, 150);
+  });
+
+  select._searchableInput = input;
+  // Re-snapshot options + reset displayed text — used when this select's
+  // <option>s get refreshed (e.g. modal re-opened) without rebuilding the DOM.
+  select._searchableRefresh = () => {
+    options = Array.from(select.options).map(o => ({
+      value: o.value, text: o.textContent, disabled: o.disabled,
+    }));
+    const cur = options.find(o => o.value === select.value);
+    input.value = cur ? cur.text : '';
+  };
+}
+
+// Call after programmatically changing a searchable select's .value from
+// other code, so the visible search box text stays in sync.
+function syncSearchableSelect(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select || !select._searchableInput) return;
+  const opt = Array.from(select.options).find(o => o.value === select.value);
+  select._searchableInput.value = opt ? opt.textContent : '';
+}
+
 async function openSlotEditor(day, startTime, endTime, slotId, branch, section, semester) {
   const ex = document.getElementById('slotEditorModal'); if (ex) ex.remove();
 
@@ -3253,6 +3351,7 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
       if (isFree) {
         facGroup.style.display = 'none';
         document.getElementById('se_faculty').value = '';
+        syncSearchableSelect('se_faculty');
       } else {
         facGroup.style.display = 'block';
       }
@@ -3262,6 +3361,9 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
     const typeInput = document.querySelector(`input[name="se_type"][value="${type}"]`);
     if (typeInput) typeInput.checked = true;
   });
+
+  makeSearchableSelect('se_course');
+  makeSearchableSelect('se_faculty');
 }
 
 async function saveSlotFromEditor(slotId, day, startTime, endTime, branch, section, semester) {
@@ -4182,6 +4284,7 @@ async function openExtraClassModal() {
   } catch(e) {
     ec_course.innerHTML = '<option value="">Failed to load courses</option>';
   }
+  makeSearchableSelect('ec_course');
 
   // Pre-fill branch/section from faculty's own timetable context if available
   document.getElementById('ec_title').value    = '';
@@ -4523,6 +4626,7 @@ async function openCreateSession() {
   sel.innerHTML = cachedCourses.length
     ? cachedCourses.map(c=>`<option value="${c.id}">${c.name} (${c.code})</option>`).join('')
     : '<option value="">No courses available - ask admin to add courses</option>';
+  makeSearchableSelect('ms_course');
   document.getElementById('ms_datetime').value = new Date().toISOString().slice(0,16);
   openModal('createSessionModal');
 }
