@@ -845,24 +845,19 @@ button, input, select, textarea { font-family: inherit; }
          <span style="font-size:.73rem;color:var(--muted);font-weight:400;">(optional — can fill later)</span>
        </div>
 
+       <!-- College -->
+       <div class="form-group">
+         <label class="form-label">College</label>
+         <select class="form-control form-select" id="regCollege">
+           <option value="">— Select College (optional) —</option>
+         </select>
+       </div>
+
        <!-- Course -->
        <div class="form-group">
          <label class="form-label">Course / Program</label>
-         <select class="form-control form-select" id="regCourse" onchange="updateBranches()">
-           <option value="">— Select Course (optional) —</option>
-           <option value="B.Tech">B.Tech (Bachelor of Technology)</option>
-           <option value="B.E">B.E (Bachelor of Engineering)</option>
-           <option value="BCA">BCA (Bachelor of Computer Applications)</option>
-           <option value="MCA">MCA (Master of Computer Applications)</option>
-           <option value="MBA">MBA (Master of Business Administration)</option>
-           <option value="B.Pharma">B.Pharma (Bachelor of Pharmacy)</option>
-           <option value="M.Tech">M.Tech (Master of Technology)</option>
-           <option value="B.Sc">B.Sc (Bachelor of Science)</option>
-           <option value="M.Sc">M.Sc (Master of Science)</option>
-           <option value="BBA">BBA (Bachelor of Business Administration)</option>
-           <option value="B.Com">B.Com (Bachelor of Commerce)</option>
-           <option value="LLB">LLB (Bachelor of Laws)</option>
-           <option value="MBBS">MBBS (Bachelor of Medicine)</option>
+         <select class="form-control form-select" id="regCourse" onchange="updateBranches()" disabled>
+           <option value="">— Select College first —</option>
          </select>
        </div>
 
@@ -1080,20 +1075,15 @@ button, input, select, textarea { font-family: inherit; }
       <div style="background:#f0f7ff;border-radius:8px;padding:12px;margin-bottom:10px;border:1px solid #dbeafe;">
         <div style="font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;"><i class="fa-solid fa-graduation-cap"></i> Academic Details</div>
         <div class="form-group">
+          <label class="form-label">College *</label>
+          <select class="form-control form-select" id="mu_college">
+            <option value="">— Select College —</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label class="form-label">Course / Program *</label>
-          <select class="form-control form-select" id="mu_course" onchange="updateAdminBranches()">
-            <option value="">— Select Course —</option>
-            <option value="B.Tech">B.Tech (Bachelor of Technology)</option>
-            <option value="B.E">B.E (Bachelor of Engineering)</option>
-            <option value="BCA">BCA (Bachelor of Computer Applications)</option>
-            <option value="MCA">MCA (Master of Computer Applications)</option>
-            <option value="MBA">MBA (Master of Business Administration)</option>
-            <option value="B.Pharma">B.Pharma (Bachelor of Pharmacy)</option>
-            <option value="M.Tech">M.Tech (Master of Technology)</option>
-            <option value="B.Sc">B.Sc (Bachelor of Science)</option>
-            <option value="BBA">BBA (Bachelor of Business Administration)</option>
-            <option value="LLB">LLB (Bachelor of Laws)</option>
-            <option value="MBBS">MBBS</option>
+          <select class="form-control form-select" id="mu_course" onchange="updateAdminBranches()" disabled>
+            <option value="">— Select College first —</option>
           </select>
         </div>
         <div class="form-group" id="mu_branch_group" style="display:none;">
@@ -1212,25 +1202,22 @@ button, input, select, textarea { font-family: inherit; }
       <div class="form-group"><label class="form-label">Course Code *</label><input class="form-control" id="mc_code" placeholder="e.g. CS301"></div>
       <div class="form-group"><label class="form-label">Course / Subject Name *</label><input class="form-control" id="mc_name" placeholder="e.g. Data Structures"></div>
     </div>
-    <!-- Program type -->
+    <!-- College / Program type -->
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Program *</label>
-        <select class="form-control form-select" id="mc_program" onchange="updateCourseBranches()">
-          <option value="">— Select Program —</option>
-          <option value="B.Tech">B.Tech</option>
-          <option value="B.E">B.E</option>
-          <option value="BCA">BCA</option>
-          <option value="MCA">MCA</option>
-          <option value="MBA">MBA</option>
-          <option value="B.Pharma">B.Pharma</option>
-          <option value="M.Tech">M.Tech</option>
-          <option value="B.Sc">B.Sc</option>
-          <option value="BBA">BBA</option>
-          <option value="LLB">LLB</option>
-          <option value="MBBS">MBBS</option>
+        <label class="form-label">College *</label>
+        <select class="form-control form-select" id="mc_college">
+          <option value="">— Select College —</option>
         </select>
       </div>
+      <div class="form-group">
+        <label class="form-label">Program *</label>
+        <select class="form-control form-select" id="mc_program" onchange="updateCourseBranches()" disabled>
+          <option value="">— Select College first —</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
       <div class="form-group">
         <label class="form-label">Credits</label>
         <input class="form-control" id="mc_credits" type="number" value="3" min="0" max="6">
@@ -1309,22 +1296,15 @@ button, input, select, textarea { font-family: inherit; }
       <input class="form-control" id="ec_title" placeholder="e.g. Extra Lecture — Unit 4 Revision">
     </div>
     <div class="form-group">
+      <label class="form-label">College <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
+      <select class="form-control form-select" id="ec_college">
+        <option value="">— Select College (optional) —</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label class="form-label">Course / Program <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
-      <select class="form-control form-select" id="ec_course_prog" onchange="updateEcBranches()">
-        <option value="">— Select Course (optional) —</option>
-        <option value="B.Tech">B.Tech</option>
-        <option value="B.E">B.E</option>
-        <option value="BCA">BCA</option>
-        <option value="MCA">MCA</option>
-        <option value="MBA">MBA</option>
-        <option value="B.Pharma">B.Pharma</option>
-        <option value="M.Tech">M.Tech</option>
-        <option value="B.Sc">B.Sc</option>
-        <option value="M.Sc">M.Sc</option>
-        <option value="BBA">BBA</option>
-        <option value="B.Com">B.Com</option>
-        <option value="LLB">LLB</option>
-        <option value="MBBS">MBBS</option>
+      <select class="form-control form-select" id="ec_course_prog" onchange="updateEcBranches()" disabled>
+        <option value="">— Select College first —</option>
       </select>
     </div>
     <div class="form-row">
@@ -1414,6 +1394,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (window.innerWidth <= 768) closeSidebar();
     });
   });
+  setupCollegeCascade('regCollege', 'regCourse', 'regBranch');
+  setupCollegeCascade('mu_college', 'mu_course', 'mu_branch');
+  setupCollegeCascade('mc_college', 'mc_program', 'mc_branch_sel');
+  setupCollegeCascade('ec_college', 'ec_course_prog', 'ec_branch');
 });
 
 /* ========== LOADING OVERLAY ================== */
@@ -1835,22 +1819,87 @@ function routeUser(user) {
   }
 }
 
-/* Branch options per course */
-const BRANCH_MAP = {
-  'B.Tech': ['CSE (Computer Science & Engineering)','CSE (AI-ML-DL)','CSE (IBM)','ECE (Electronics & Communication)','ME (Mechanical Engineering)','Civil Engineering','EE (Electrical Engineering)','IT (Information Technology)','Chemical Engineering','Biotechnology','Aerospace Engineering'],
-  'B.E':    ['CSE','ECE','ME','Civil','EE','IT','Chemical','Biotechnology'],
-  'BCA':    ['BCA (General)','BCA with Data Science','BCA with Cybersecurity'],
-  'MCA':    ['MCA (General)','MCA with AI/ML','MCA with Cloud Computing'],
-  'MBA':    ['Finance','Marketing','Human Resource','Operations','Business Analytics','International Business'],
-  'B.Pharma':['B.Pharma (General)','Pharmaceutical Chemistry','Pharmacology'],
-  'M.Tech': ['CSE','ECE','ME','Civil','AI & Machine Learning','Data Science','VLSI Design'],
-  'B.Sc':   ['Physics','Chemistry','Mathematics','Biology','Computer Science','Statistics'],
-  'M.Sc':   ['Physics','Chemistry','Mathematics','Biology','Computer Science'],
-  'BBA':    ['BBA (General)','BBA Finance','BBA Marketing','BBA HR'],
-  'B.Com':  ['B.Com (General)','B.Com Hons','B.Com with CA'],
-  'LLB':    ['LLB (General)','LLB (Corporate Law)','LLB (Criminal Law)'],
-  'MBBS':   ['MBBS (General Medicine)'],
+/* ==================================================================
+   Real TMU College → Programme → Specialization structure, from the
+   official Programmes Detail & Admission Criteria fee structure.
+   ================================================================== */
+const TMU_COLLEGES = {
+  "Medical College & Research Centre": ["MBBS", "MD", "MS", "B.Sc. Medical", "M.Sc. Medical"],
+  "Dental College & Research Centre": ["BDS", "MDS"],
+  "College of Nursing": ["ANM (Diploma)", "B.Sc. Nursing", "Post Basic B.Sc. Nursing", "M.Sc. Nursing"],
+  "College of Paramedical Sciences": ["B.Sc. (Radiological Imaging Techniques)", "B.Sc. (Medical Lab Techniques)", "B.Sc. (Forensic Science)", "B.OPTM (Optometry)", "M.Sc. (Radiological Imaging Techniques)", "M.Sc. (Optometry)", "M.Sc. (Medical Lab Techniques)", "Diploma (Technician)"],
+  "Department of Physiotherapy": ["BPT", "MPT"],
+  "College of Pharmacy": ["D.Pharm.", "B.Pharm.", "B.Pharm. (Lateral Entry)", "Pharm.D.", "Pharm.D. (Post Baccalaureate)", "M.Pharm"],
+  "College of Management (TMIMT)": ["BBA", "BBA (Honours)", "B.Com (Honours)", "MBA", "MBA Hospital Management", "MBA Corporate with Global Exposure"],
+  "College of Computing Sciences & IT": ["BCA (Honours)", "MCA", "B.Tech (CSE)", "B.Tech (CSE) Lateral Entry", "M.Tech (CSE)", "BSc (Animation)", "BSc Computer Science (Honours)", "M.Sc. (in collaboration with Aivancity, France)"],
+  "Faculty of Engineering (College of Engineering)": ["B.Tech", "B.Tech Lateral Entry", "M.Tech"],
+  "TMIMT College of Physical Education": ["B.P.Ed.", "M.P.Ed.", "BPES (Honours)"],
+  "College of Law & Legal Studies": ["B.A.-LL.B. (Hons.)", "B.B.A.-LL.B. (Hons.)", "B.Com.-LL.B. (Hons.)", "LL.M."],
+  "Faculty of Education": ["B.Ed.", "M.Ed.", "B.El.Ed.", "D.El.Ed. (BTC)", "ITEP - Secondary (Science)"],
+  "Faculty of Humanities & Social Sciences": ["BA English (Honours)", "BA Economics (Honours)", "BA Psychology (Honours)", "B.LIS", "M.LIS", "B.A.", "B.Sc. (ZBC/PCM)"],
+  "College of Agriculture Sciences": ["B.Sc. Agriculture (Honours)", "M.Sc. Agriculture"],
+  "College of Fine Arts": ["BFA (Honours)", "M.F.A."],
+  "Doctoral Programmes (Ph.D)": ["Ph.D"],
 };
+
+/* Specializations per programme — kept under the old name (BRANCH_MAP) so
+   every existing function that reads it (updateBranches, updateAdminBranches,
+   updateCourseBranches, etc.) keeps working unchanged. */
+const BRANCH_MAP = {
+  "MD": ["Radio-Diagnosis/Radiology", "Dermatology, Venereology & Leprosy", "General Medicine", "Pediatrics", "Respiratory Medicine/TB & Chest", "Psychiatry", "Anaesthesiology", "Pathology", "Biochemistry", "Microbiology", "Community Medicine", "Pharmacology", "Anatomy", "Physiology", "Forensic Medicine"],
+  "MS": ["ENT/Oto-Rhinolaryngology", "General Surgery", "Ophthalmology", "Orthopaedics", "Obstetrics & Gynecology"],
+  "B.Sc. Medical": ["Anatomy", "Physiology", "Biochemistry"],
+  "M.Sc. Medical": ["Pharmacology", "Anatomy", "Physiology", "Biochemistry", "Microbiology"],
+  "MDS": ["Conservative Dentistry & Endodontics", "Oral & Maxillofacial Surgery", "Orthodontics & Dentofacial Orthopedics", "Prosthodontics and Crown & Bridge", "Paedodontics & Preventive Dentistry", "Periodontology", "Public Health Dentistry", "Oral Medicine & Radiology", "Oral Pathology & Microbiology"],
+  "M.Sc. Nursing": ["Medical Surgical Nursing", "Child Health (Paediatric) Nursing", "Obstetrics & Gynecology Nursing", "Community Health Nursing", "Mental Health (Psychiatric) Nursing"],
+  "B.Sc. (Forensic Science)": ["Honours", "Honours with Research"],
+  "Diploma (Technician)": ["Neonatal Care Technician", "Intervention Radiology", "X-Ray Technician", "Optometry", "Laboratory Technician", "Blood Transfusion", "C.T. Scan Technician", "Emergency & Trauma Care", "Cardiology Technician", "Dialysis Technician", "M.R.I. Technician", "O.T. Technician", "Anaesthesia and Critical Care Technician", "Orthopaedic and Plaster Technician", "Audio And Speech Therapy"],
+  "MPT": ["Orthopaedics", "Neurosciences", "Cardiopulmonary", "Sports", "Paediatrics", "Gynaecology & Obstetrics"],
+  "M.Pharm": ["Pharmacology", "Pharmaceutics", "Pharmacognosy", "Pharmaceutical Analysis"],
+  "BBA": ["General", "International Business and Entrepreneurship", "Data Analytics"],
+  "BBA (Honours)": ["Finance", "Digital Marketing", "Fintech & Blockchain Technology", "Business Analytics", "Economics, Accounting & Tax Laws"],
+  "B.Com (Honours)": ["Finance", "Human Resource Management", "Marketing Management", "Digital Marketing", "Fintech & Blockchain Technology", "Business Analytics", "Economics, Accounting & Tax Laws"],
+  "MBA": ["Marketing", "HR", "IB", "Finance", "Agri. Business", "Logistics and Supply Chain Management", "Data Analytics"],
+  "BCA (Honours)": ["CSE - Cloud Technology & Information Security", "CSE - Application Development using Cloud & Analytics Platform (with IBM)", "CSE - Data Science", "CSE - Cyber Security"],
+  "MCA": ["Software Development", "Machine Learning", "Network Technologies", "Data Science & Analytics", "Advance Technologies"],
+  "B.Tech (CSE)": ["Computer Science & Engineering", "CSE - Artificial Intelligence, Machine Learning & Deep Learning"],
+  "B.Tech (CSE) Lateral Entry": ["Computer Science & Engineering", "Artificial Intelligence, Machine Learning & Deep Learning", "CSE - Cyber Security", "CSE - Data Science"],
+  "M.Tech (CSE)": ["Artificial Intelligence", "Data Analytics", "Cyber Security", "Full Stack", "Web Applications", "Software Engineering & Quality Testing", "Cloud Computing and IOT", "Digital Marketing", "Cloud Technology and Information Security", "Mobile Application and Web Technology"],
+  "BSc (Animation)": ["Product Designing", "UI/UX Designing", "Graphics Designing", "Game Designing", "VFX"],
+  "BSc Computer Science (Honours)": ["AI and Data Science", "Block chain Technology", "Data Engineering", "Full Stack Development", "Cloud Technology and IoT", "Information Security", "Cognitive Science"],
+  "B.Tech": ["Computer Science & Engineering (CSE)", "Mechanical Engineering (ME)", "Electronics & Communication Engineering (ECE)", "Civil Engineering (CE)", "Electrical Engineering (EE)"],
+  "B.Tech Lateral Entry": ["Computer Science & Engineering (CSE)", "Mechanical Engineering (ME)", "Electronics & Communication Engineering (ECE)", "Civil Engineering (CE)", "Electrical Engineering (EE)"],
+  "M.Tech": ["Artificial Intelligence", "Data Science", "Machine Learning & Data Sciences", "Electrical Power & Energy System", "Additive Manufacturing", "Structural And Construction Engineering"],
+  "M.P.Ed.": ["Physical Education"],
+  "M.Sc. Agriculture": ["Agronomy", "Soil Science", "Plant Pathology"],
+  "BFA (Honours)": ["Painting", "Applied Arts"],
+  "Ph.D": ["Computer Applications", "Engineering", "Education", "Management", "Law", "Physical Education", "Pharmacy", "Physiotherapy", "Allied Health Sciences", "Fine Arts", "Jainology", "Medical", "Dental Sciences", "Nursing", "Agriculture Sciences"],
+};
+
+/* Reusable 3-level cascade: College select → Programme select → Specialization select.
+   collegeId/courseId must exist in the DOM; branchId is optional (some forms
+   only need College+Programme, not the specialization level). */
+function setupCollegeCascade(collegeId, courseId, branchId) {
+  const collegeSel = document.getElementById(collegeId);
+  const courseSel  = document.getElementById(courseId);
+  if (!collegeSel || !courseSel) return;
+
+  collegeSel.innerHTML = '<option value="">— Select College —</option>' +
+    Object.keys(TMU_COLLEGES).map(c => `<option value="${c}">${c}</option>`).join('');
+
+  collegeSel.onchange = () => {
+    const college = collegeSel.value;
+    const programs = TMU_COLLEGES[college] || [];
+    courseSel.innerHTML = '<option value="">— Select Programme —</option>' +
+      programs.map(p => `<option value="${p}">${p}</option>`).join('');
+    courseSel.disabled = !college;
+    if (branchId) {
+      const branchSel = document.getElementById(branchId);
+      if (branchSel) branchSel.innerHTML = '<option value="">— Select Specialization (optional) —</option>';
+    }
+    courseSel.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+}
 
 function updateBranches() {
   const course = document.getElementById('regCourse').value;
