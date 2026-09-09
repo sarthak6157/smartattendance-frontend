@@ -845,19 +845,24 @@ button, input, select, textarea { font-family: inherit; }
          <span style="font-size:.73rem;color:var(--muted);font-weight:400;">(optional — can fill later)</span>
        </div>
 
-       <!-- College -->
-       <div class="form-group">
-         <label class="form-label">College</label>
-         <select class="form-control form-select" id="regCollege">
-           <option value="">— Select College (optional) —</option>
-         </select>
-       </div>
-
        <!-- Course -->
        <div class="form-group">
          <label class="form-label">Course / Program</label>
-         <select class="form-control form-select" id="regCourse" onchange="updateBranches()" disabled>
-           <option value="">— Select College first —</option>
+         <select class="form-control form-select" id="regCourse" onchange="updateBranches()">
+           <option value="">— Select Course (optional) —</option>
+           <option value="B.Tech">B.Tech (Bachelor of Technology)</option>
+           <option value="B.E">B.E (Bachelor of Engineering)</option>
+           <option value="BCA">BCA (Bachelor of Computer Applications)</option>
+           <option value="MCA">MCA (Master of Computer Applications)</option>
+           <option value="MBA">MBA (Master of Business Administration)</option>
+           <option value="B.Pharma">B.Pharma (Bachelor of Pharmacy)</option>
+           <option value="M.Tech">M.Tech (Master of Technology)</option>
+           <option value="B.Sc">B.Sc (Bachelor of Science)</option>
+           <option value="M.Sc">M.Sc (Master of Science)</option>
+           <option value="BBA">BBA (Bachelor of Business Administration)</option>
+           <option value="B.Com">B.Com (Bachelor of Commerce)</option>
+           <option value="LLB">LLB (Bachelor of Laws)</option>
+           <option value="MBBS">MBBS (Bachelor of Medicine)</option>
          </select>
        </div>
 
@@ -1058,7 +1063,7 @@ button, input, select, textarea { font-family: inherit; }
     <h3><i class="fa-solid fa-user-plus" style="color:var(--accent);"></i> Add New User</h3>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="mu_name" placeholder="Full name"></div>
-      <div class="form-group"><label class="form-label">Institution ID *</label><input class="form-control" id="mu_id" placeholder="e.g. STU006 or TMU003"></div>
+      <div class="form-group"><label class="form-label">Institution ID *</label><input class="form-control" id="mu_id" placeholder="e.g. STU006 or FAC003"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Email *</label><input class="form-control" id="mu_email" type="email" placeholder="email@tmu.ac.in"></div>
@@ -1075,15 +1080,20 @@ button, input, select, textarea { font-family: inherit; }
       <div style="background:#f0f7ff;border-radius:8px;padding:12px;margin-bottom:10px;border:1px solid #dbeafe;">
         <div style="font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;"><i class="fa-solid fa-graduation-cap"></i> Academic Details</div>
         <div class="form-group">
-          <label class="form-label">College *</label>
-          <select class="form-control form-select" id="mu_college">
-            <option value="">— Select College —</option>
-          </select>
-        </div>
-        <div class="form-group">
           <label class="form-label">Course / Program *</label>
-          <select class="form-control form-select" id="mu_course" onchange="updateAdminBranches()" disabled>
-            <option value="">— Select College first —</option>
+          <select class="form-control form-select" id="mu_course" onchange="updateAdminBranches()">
+            <option value="">— Select Course —</option>
+            <option value="B.Tech">B.Tech (Bachelor of Technology)</option>
+            <option value="B.E">B.E (Bachelor of Engineering)</option>
+            <option value="BCA">BCA (Bachelor of Computer Applications)</option>
+            <option value="MCA">MCA (Master of Computer Applications)</option>
+            <option value="MBA">MBA (Master of Business Administration)</option>
+            <option value="B.Pharma">B.Pharma (Bachelor of Pharmacy)</option>
+            <option value="M.Tech">M.Tech (Master of Technology)</option>
+            <option value="B.Sc">B.Sc (Bachelor of Science)</option>
+            <option value="BBA">BBA (Bachelor of Business Administration)</option>
+            <option value="LLB">LLB (Bachelor of Laws)</option>
+            <option value="MBBS">MBBS</option>
           </select>
         </div>
         <div class="form-group" id="mu_branch_group" style="display:none;">
@@ -1202,25 +1212,28 @@ button, input, select, textarea { font-family: inherit; }
       <div class="form-group"><label class="form-label">Course Code *</label><input class="form-control" id="mc_code" placeholder="e.g. CS301"></div>
       <div class="form-group"><label class="form-label">Course / Subject Name *</label><input class="form-control" id="mc_name" placeholder="e.g. Data Structures"></div>
     </div>
-    <!-- College / Program type -->
+    <!-- Program type -->
     <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">College *</label>
-        <select class="form-control form-select" id="mc_college">
-          <option value="">— Select College —</option>
-        </select>
-      </div>
       <div class="form-group">
         <label class="form-label">Program *</label>
-        <select class="form-control form-select" id="mc_program" onchange="updateCourseBranches()" disabled>
-          <option value="">— Select College first —</option>
+        <select class="form-control form-select" id="mc_program" onchange="updateCourseBranches()">
+          <option value="">— Select Program —</option>
+          <option value="B.Tech">B.Tech</option>
+          <option value="B.E">B.E</option>
+          <option value="BCA">BCA</option>
+          <option value="MCA">MCA</option>
+          <option value="MBA">MBA</option>
+          <option value="B.Pharma">B.Pharma</option>
+          <option value="M.Tech">M.Tech</option>
+          <option value="B.Sc">B.Sc</option>
+          <option value="BBA">BBA</option>
+          <option value="LLB">LLB</option>
+          <option value="MBBS">MBBS</option>
         </select>
       </div>
-    </div>
-    <div class="form-row">
       <div class="form-group">
         <label class="form-label">Credits</label>
-        <input class="form-control" id="mc_credits" type="number" value="3" min="0" max="6">
+        <input class="form-control" id="mc_credits" type="number" value="3" min="1" max="6">
       </div>
     </div>
     <!-- Branch with free text option -->
@@ -1296,15 +1309,22 @@ button, input, select, textarea { font-family: inherit; }
       <input class="form-control" id="ec_title" placeholder="e.g. Extra Lecture — Unit 4 Revision">
     </div>
     <div class="form-group">
-      <label class="form-label">College <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
-      <select class="form-control form-select" id="ec_college">
-        <option value="">— Select College (optional) —</option>
-      </select>
-    </div>
-    <div class="form-group">
       <label class="form-label">Course / Program <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
-      <select class="form-control form-select" id="ec_course_prog" onchange="updateEcBranches()" disabled>
-        <option value="">— Select College first —</option>
+      <select class="form-control form-select" id="ec_course_prog" onchange="updateEcBranches()">
+        <option value="">— Select Course (optional) —</option>
+        <option value="B.Tech">B.Tech</option>
+        <option value="B.E">B.E</option>
+        <option value="BCA">BCA</option>
+        <option value="MCA">MCA</option>
+        <option value="MBA">MBA</option>
+        <option value="B.Pharma">B.Pharma</option>
+        <option value="M.Tech">M.Tech</option>
+        <option value="B.Sc">B.Sc</option>
+        <option value="M.Sc">M.Sc</option>
+        <option value="BBA">BBA</option>
+        <option value="B.Com">B.Com</option>
+        <option value="LLB">LLB</option>
+        <option value="MBBS">MBBS</option>
       </select>
     </div>
     <div class="form-row">
@@ -1394,10 +1414,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (window.innerWidth <= 768) closeSidebar();
     });
   });
-  setupCollegeCascade('regCollege', 'regCourse', 'regBranch');
-  setupCollegeCascade('mu_college', 'mu_course', 'mu_branch');
-  setupCollegeCascade('mc_college', 'mc_program', 'mc_branch_sel');
-  setupCollegeCascade('ec_college', 'ec_course_prog', 'ec_branch');
 });
 
 /* ========== LOADING OVERLAY ================== */
@@ -1470,7 +1486,7 @@ async function exportAttendanceCSV(sessionId) {
     const records  = attData.records || [];
     const stuCache = allUsersCache || [];
     const rows = stuCache.map(stu => {
-      const rec = records.find(r => r.student_id === stu.inst_id);
+      const rec = records.find(r => r.student_id === stu.id);
       return [
         stu.full_name, stu.inst_id, stu.branch||'', stu.section||'',
         rec?.status || 'absent', rec?.method || '-',
@@ -1492,7 +1508,7 @@ async function exportReportsCSV() {
     const students = ud.users || [];
     const closed   = (sd.sessions||[]).filter(s=>s.status==='closed');
     const rows = await Promise.all(students.map(async stu => {
-      const att = await API.get(`/attendance/student/${stu.inst_id}?limit=500`).catch(()=>({records:[]}));
+      const att = await API.get(`/attendance/student/${stu.id}?limit=500`).catch(()=>({records:[]}));
       const present = (att.records||[]).filter(r=>r.status==='present').length;
       const pct = closed.length ? Math.round(present/closed.length*100) : 0;
       return [stu.full_name, stu.inst_id, stu.branch||'', stu.section||'',
@@ -1525,7 +1541,7 @@ async function renderDefaulters(c) {
     const closed   = (sd.sessions||[]).filter(s=>s.status==='closed');
 
     const rows = await Promise.all(students.map(async stu => {
-      const att = await API.get(`/attendance/student/${stu.inst_id}?limit=500`).catch(()=>({records:[]}));
+      const att = await API.get(`/attendance/student/${stu.id}?limit=500`).catch(()=>({records:[]}));
       const present = (att.records||[]).filter(r=>r.status==='present').length;
       const pct = closed.length ? Math.round(present/closed.length*100) : 100;
       return { ...stu, present, total: closed.length, pct };
@@ -1638,7 +1654,7 @@ async function approveAll() {
   let approved = 0;
   for (const u of pending) {
     try {
-      await API.patch(`/users/${u.inst_id}/status`, { status: 'active' });
+      await API.patch(`/users/${u.id}/status`, { status: 'active' });
       approved++;
     } catch {}
   }
@@ -1704,6 +1720,7 @@ const API = (() => {
   };
 
   return {
+    _base,
     base,
     get:    (path)         => fetch(`${base}${path}`, { headers: headers() }).then(handle),
     post:   (path, body)   => fetch(`${base}${path}`, { method:'POST',   headers: headers(), body: JSON.stringify(body) }).then(handle),
@@ -1714,7 +1731,7 @@ const API = (() => {
 
 /* =========================== STATE =========================== */
 let currentUser = null;
-var loginRole   = 'student';  // var for hoisting — setLoginRole runs before this line
+let loginRole   = 'student';
 let qrInterval  = null;
 let camStream   = null;
 let scanState   = {};
@@ -1789,7 +1806,13 @@ async function doLogin() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Logging in...';
   try {
-    const data = await API.post('/auth/login', { credential: id, password: pass, role: loginRole });
+    const data = await API.post('/auth/login', { credential: id, password: pass });
+    // Role check
+    if (data.user.role !== loginRole) {
+      toast(`This ID belongs to a ${data.user.role}, not a ${loginRole}. Please select the correct role tab.`, 'error');
+      btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login';
+      return;
+    }
     // Reset rate limit on success
     localStorage.removeItem('sas_login_attempts');
     localStorage.setItem('sas_token', data.access_token);
@@ -1819,87 +1842,22 @@ function routeUser(user) {
   }
 }
 
-/* ==================================================================
-   Real TMU College → Programme → Specialization structure, from the
-   official Programmes Detail & Admission Criteria fee structure.
-   ================================================================== */
-const TMU_COLLEGES = {
-  "Medical College & Research Centre": ["MBBS", "MD", "MS", "B.Sc. Medical", "M.Sc. Medical"],
-  "Dental College & Research Centre": ["BDS", "MDS"],
-  "College of Nursing": ["ANM (Diploma)", "B.Sc. Nursing", "Post Basic B.Sc. Nursing", "M.Sc. Nursing"],
-  "College of Paramedical Sciences": ["B.Sc. (Radiological Imaging Techniques)", "B.Sc. (Medical Lab Techniques)", "B.Sc. (Forensic Science)", "B.OPTM (Optometry)", "M.Sc. (Radiological Imaging Techniques)", "M.Sc. (Optometry)", "M.Sc. (Medical Lab Techniques)", "Diploma (Technician)"],
-  "Department of Physiotherapy": ["BPT", "MPT"],
-  "College of Pharmacy": ["D.Pharm.", "B.Pharm.", "B.Pharm. (Lateral Entry)", "Pharm.D.", "Pharm.D. (Post Baccalaureate)", "M.Pharm"],
-  "College of Management (TMIMT)": ["BBA", "BBA (Honours)", "B.Com (Honours)", "MBA", "MBA Hospital Management", "MBA Corporate with Global Exposure"],
-  "College of Computing Sciences & IT": ["BCA (Honours)", "MCA", "B.Tech (CSE)", "B.Tech (CSE) Lateral Entry", "M.Tech (CSE)", "BSc (Animation)", "BSc Computer Science (Honours)", "M.Sc. (in collaboration with Aivancity, France)"],
-  "Faculty of Engineering (College of Engineering)": ["B.Tech", "B.Tech Lateral Entry", "M.Tech"],
-  "TMIMT College of Physical Education": ["B.P.Ed.", "M.P.Ed.", "BPES (Honours)"],
-  "College of Law & Legal Studies": ["B.A.-LL.B. (Hons.)", "B.B.A.-LL.B. (Hons.)", "B.Com.-LL.B. (Hons.)", "LL.M."],
-  "Faculty of Education": ["B.Ed.", "M.Ed.", "B.El.Ed.", "D.El.Ed. (BTC)", "ITEP - Secondary (Science)"],
-  "Faculty of Humanities & Social Sciences": ["BA English (Honours)", "BA Economics (Honours)", "BA Psychology (Honours)", "B.LIS", "M.LIS", "B.A.", "B.Sc. (ZBC/PCM)"],
-  "College of Agriculture Sciences": ["B.Sc. Agriculture (Honours)", "M.Sc. Agriculture"],
-  "College of Fine Arts": ["BFA (Honours)", "M.F.A."],
-  "Doctoral Programmes (Ph.D)": ["Ph.D"],
-};
-
-/* Specializations per programme — kept under the old name (BRANCH_MAP) so
-   every existing function that reads it (updateBranches, updateAdminBranches,
-   updateCourseBranches, etc.) keeps working unchanged. */
+/* Branch options per course */
 const BRANCH_MAP = {
-  "MD": ["Radio-Diagnosis/Radiology", "Dermatology, Venereology & Leprosy", "General Medicine", "Pediatrics", "Respiratory Medicine/TB & Chest", "Psychiatry", "Anaesthesiology", "Pathology", "Biochemistry", "Microbiology", "Community Medicine", "Pharmacology", "Anatomy", "Physiology", "Forensic Medicine"],
-  "MS": ["ENT/Oto-Rhinolaryngology", "General Surgery", "Ophthalmology", "Orthopaedics", "Obstetrics & Gynecology"],
-  "B.Sc. Medical": ["Anatomy", "Physiology", "Biochemistry"],
-  "M.Sc. Medical": ["Pharmacology", "Anatomy", "Physiology", "Biochemistry", "Microbiology"],
-  "MDS": ["Conservative Dentistry & Endodontics", "Oral & Maxillofacial Surgery", "Orthodontics & Dentofacial Orthopedics", "Prosthodontics and Crown & Bridge", "Paedodontics & Preventive Dentistry", "Periodontology", "Public Health Dentistry", "Oral Medicine & Radiology", "Oral Pathology & Microbiology"],
-  "M.Sc. Nursing": ["Medical Surgical Nursing", "Child Health (Paediatric) Nursing", "Obstetrics & Gynecology Nursing", "Community Health Nursing", "Mental Health (Psychiatric) Nursing"],
-  "B.Sc. (Forensic Science)": ["Honours", "Honours with Research"],
-  "Diploma (Technician)": ["Neonatal Care Technician", "Intervention Radiology", "X-Ray Technician", "Optometry", "Laboratory Technician", "Blood Transfusion", "C.T. Scan Technician", "Emergency & Trauma Care", "Cardiology Technician", "Dialysis Technician", "M.R.I. Technician", "O.T. Technician", "Anaesthesia and Critical Care Technician", "Orthopaedic and Plaster Technician", "Audio And Speech Therapy"],
-  "MPT": ["Orthopaedics", "Neurosciences", "Cardiopulmonary", "Sports", "Paediatrics", "Gynaecology & Obstetrics"],
-  "M.Pharm": ["Pharmacology", "Pharmaceutics", "Pharmacognosy", "Pharmaceutical Analysis"],
-  "BBA": ["General", "International Business and Entrepreneurship", "Data Analytics"],
-  "BBA (Honours)": ["Finance", "Digital Marketing", "Fintech & Blockchain Technology", "Business Analytics", "Economics, Accounting & Tax Laws"],
-  "B.Com (Honours)": ["Finance", "Human Resource Management", "Marketing Management", "Digital Marketing", "Fintech & Blockchain Technology", "Business Analytics", "Economics, Accounting & Tax Laws"],
-  "MBA": ["Marketing", "HR", "IB", "Finance", "Agri. Business", "Logistics and Supply Chain Management", "Data Analytics"],
-  "BCA (Honours)": ["CSE - Cloud Technology & Information Security", "CSE - Application Development using Cloud & Analytics Platform (with IBM)", "CSE - Data Science", "CSE - Cyber Security"],
-  "MCA": ["Software Development", "Machine Learning", "Network Technologies", "Data Science & Analytics", "Advance Technologies"],
-  "B.Tech (CSE)": ["Computer Science & Engineering", "CSE - Artificial Intelligence, Machine Learning & Deep Learning"],
-  "B.Tech (CSE) Lateral Entry": ["Computer Science & Engineering", "Artificial Intelligence, Machine Learning & Deep Learning", "CSE - Cyber Security", "CSE - Data Science"],
-  "M.Tech (CSE)": ["Artificial Intelligence", "Data Analytics", "Cyber Security", "Full Stack", "Web Applications", "Software Engineering & Quality Testing", "Cloud Computing and IOT", "Digital Marketing", "Cloud Technology and Information Security", "Mobile Application and Web Technology"],
-  "BSc (Animation)": ["Product Designing", "UI/UX Designing", "Graphics Designing", "Game Designing", "VFX"],
-  "BSc Computer Science (Honours)": ["AI and Data Science", "Block chain Technology", "Data Engineering", "Full Stack Development", "Cloud Technology and IoT", "Information Security", "Cognitive Science"],
-  "B.Tech": ["Computer Science & Engineering (CSE)", "Mechanical Engineering (ME)", "Electronics & Communication Engineering (ECE)", "Civil Engineering (CE)", "Electrical Engineering (EE)"],
-  "B.Tech Lateral Entry": ["Computer Science & Engineering (CSE)", "Mechanical Engineering (ME)", "Electronics & Communication Engineering (ECE)", "Civil Engineering (CE)", "Electrical Engineering (EE)"],
-  "M.Tech": ["Artificial Intelligence", "Data Science", "Machine Learning & Data Sciences", "Electrical Power & Energy System", "Additive Manufacturing", "Structural And Construction Engineering"],
-  "M.P.Ed.": ["Physical Education"],
-  "M.Sc. Agriculture": ["Agronomy", "Soil Science", "Plant Pathology"],
-  "BFA (Honours)": ["Painting", "Applied Arts"],
-  "Ph.D": ["Computer Applications", "Engineering", "Education", "Management", "Law", "Physical Education", "Pharmacy", "Physiotherapy", "Allied Health Sciences", "Fine Arts", "Jainology", "Medical", "Dental Sciences", "Nursing", "Agriculture Sciences"],
+  'B.Tech': ['CSE (Computer Science & Engineering)','CSE (AI-ML-DL)','CSE (IBM)','ECE (Electronics & Communication)','ME (Mechanical Engineering)','Civil Engineering','EE (Electrical Engineering)','IT (Information Technology)','Chemical Engineering','Biotechnology','Aerospace Engineering'],
+  'B.E':    ['CSE','ECE','ME','Civil','EE','IT','Chemical','Biotechnology'],
+  'BCA':    ['BCA (General)','BCA with Data Science','BCA with Cybersecurity'],
+  'MCA':    ['MCA (General)','MCA with AI/ML','MCA with Cloud Computing'],
+  'MBA':    ['Finance','Marketing','Human Resource','Operations','Business Analytics','International Business'],
+  'B.Pharma':['B.Pharma (General)','Pharmaceutical Chemistry','Pharmacology'],
+  'M.Tech': ['CSE','ECE','ME','Civil','AI & Machine Learning','Data Science','VLSI Design'],
+  'B.Sc':   ['Physics','Chemistry','Mathematics','Biology','Computer Science','Statistics'],
+  'M.Sc':   ['Physics','Chemistry','Mathematics','Biology','Computer Science'],
+  'BBA':    ['BBA (General)','BBA Finance','BBA Marketing','BBA HR'],
+  'B.Com':  ['B.Com (General)','B.Com Hons','B.Com with CA'],
+  'LLB':    ['LLB (General)','LLB (Corporate Law)','LLB (Criminal Law)'],
+  'MBBS':   ['MBBS (General Medicine)'],
 };
-
-/* Reusable 3-level cascade: College select → Programme select → Specialization select.
-   collegeId/courseId must exist in the DOM; branchId is optional (some forms
-   only need College+Programme, not the specialization level). */
-function setupCollegeCascade(collegeId, courseId, branchId) {
-  const collegeSel = document.getElementById(collegeId);
-  const courseSel  = document.getElementById(courseId);
-  if (!collegeSel || !courseSel) return;
-
-  collegeSel.innerHTML = '<option value="">— Select College —</option>' +
-    Object.keys(TMU_COLLEGES).map(c => `<option value="${c}">${c}</option>`).join('');
-
-  collegeSel.onchange = () => {
-    const college = collegeSel.value;
-    const programs = TMU_COLLEGES[college] || [];
-    courseSel.innerHTML = '<option value="">— Select Programme —</option>' +
-      programs.map(p => `<option value="${p}">${p}</option>`).join('');
-    courseSel.disabled = !college;
-    if (branchId) {
-      const branchSel = document.getElementById(branchId);
-      if (branchSel) branchSel.innerHTML = '<option value="">— Select Specialization (optional) —</option>';
-    }
-    courseSel.dispatchEvent(new Event('change', { bubbles: true }));
-  };
-}
 
 function updateBranches() {
   const course = document.getElementById('regCourse').value;
@@ -2050,18 +2008,16 @@ async function adminNav(section) {
 }
 
 async function renderAdminDashboard(c) {
-  const [studentsRes, facultyRes, sessions, courses] = await Promise.all([
-    API.get('/users?role=student&limit=500').catch(()=>({total:0,users:[]})),
-    API.get('/users?role=faculty&limit=500').catch(()=>({total:0,users:[]})),
+  const [users, sessions, courses] = await Promise.all([
+    API.get('/users?limit=500').catch(()=>({total:0,users:[]})),
     API.get('/sessions?limit=500').catch(()=>({total:0,sessions:[]})),
     API.get('/courses').catch(()=>[]),
   ]);
   cachedCourses = Array.isArray(courses) ? courses : [];
-  const students   = studentsRes.users||[];
-  const faculty    = facultyRes.users||[];
-  const allUsers   = [...students, ...faculty]
-    .sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));  // for "recently added" + pending count below
+  const allUsers    = users.users||[];
   const allSessions = sessions.sessions||[];
+  const students  = allUsers.filter(u=>u.role==='student');
+  const faculty   = allUsers.filter(u=>u.role==='faculty');
   const pending   = allUsers.filter(u=>u.status==='pending');
   const active    = allSessions.filter(s=>s.status==='active');
 
@@ -2129,22 +2085,13 @@ async function renderUserMgmt(c) {
         <button class="btn btn-success btn-sm" onclick="exportUsersCSV()"><i class="fa-solid fa-download"></i> CSV</button>
       </div>
     </div>
-    <div class="card" style="padding:6px;margin-bottom:14px;">
-      <div style="display:flex;gap:4px;">
-        <button class="usertab-btn" data-tab="student" onclick="switchUserTab('student')"><i class="fa-solid fa-user-graduate"></i> Students</button>
-        <button class="usertab-btn" data-tab="faculty" onclick="switchUserTab('faculty')"><i class="fa-solid fa-chalkboard-user"></i> Faculty</button>
-        <button class="usertab-btn" data-tab="admin"   onclick="switchUserTab('admin')"><i class="fa-solid fa-user-shield"></i> Admins</button>
-      </div>
-    </div>
-    <style>
-      .usertab-btn{flex:1;padding:9px 14px;border:none;background:transparent;border-radius:8px;font-weight:600;font-size:.85rem;color:var(--muted);cursor:pointer;transition:.15s;}
-      .usertab-btn:hover{background:var(--bg);}
-      .usertab-btn.active{background:var(--accent);color:#fff;}
-    </style>
     <div class="card">
       <!-- PRIMARY FILTERS ROW -->
       <div class="search-bar" style="flex-wrap:wrap;gap:8px;">
         <input class="form-control" id="userSearch" placeholder="Search name, ID, email..." style="min-width:200px;flex:1;" oninput="filterUsersTable()">
+        <select class="form-control form-select" id="roleFilter" onchange="onRoleFilterChange()" style="max-width:140px;">
+          <option value="">All Roles</option><option value="student">Students</option><option value="faculty">Faculty</option><option value="admin">Admins</option>
+        </select>
         <select class="form-control form-select" id="statusFilter" onchange="filterUsersTable()" style="max-width:140px;">
           <option value="">All Status</option><option value="active">Active</option><option value="pending">Pending</option><option value="inactive">Inactive</option>
         </select>
@@ -2198,23 +2145,6 @@ async function renderUserMgmt(c) {
       <div id="usersTableBody"><div class="empty-state"><div class="big-spinner" style="margin:0 auto;width:30px;height:30px;border-width:3px;"></div></div></div>
     </div>`;
   await loadUsersTable();
-  updateUserTabStyles();
-}
-
-let currentUserTab = 'student';
-
-function switchUserTab(role) {
-  currentUserTab = role;
-  updateUserTabStyles();
-  const adv = document.getElementById('advancedFilters');
-  if (adv && role !== 'student') adv.style.display = 'none';
-  loadUsersTable();
-}
-
-function updateUserTabStyles() {
-  document.querySelectorAll('.usertab-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tab === currentUserTab);
-  });
 }
 
 let allUsersCache = [];
@@ -2223,7 +2153,7 @@ let _filterOptions = { branches:[], sections:[], semesters:[], courses:[] };
 async function loadUsersTable() {
   try {
     const [data, opts] = await Promise.all([
-      API.get(`/users?role=${currentUserTab}&limit=500`),
+      API.get('/users?limit=500'),
       API.get('/users/filter-options').catch(()=>({ branches:[], sections:[], semesters:[], courses:[] })),
     ]);
     allUsersCache  = data.users || [];
@@ -2247,6 +2177,15 @@ function _populateFilterDropdowns(opts) {
   fill('sectionFilter',  opts.sections  || [], 'All Sections');
   fill('semesterFilter', opts.semesters || [], 'All Semesters');
   fill('courseFilter',   opts.courses   || [], 'All Programs');
+}
+
+function onRoleFilterChange() {
+  const role = document.getElementById('roleFilter')?.value || '';
+  // Show/hide advanced filters only for student role or no role
+  const adv = document.getElementById('advancedFilters');
+  const btn = document.getElementById('advFiltersBtn');
+  if (adv && role === 'faculty') { adv.style.display = 'none'; }
+  filterUsersTable();
 }
 
 function onBranchFilterChange() {
@@ -2311,7 +2250,7 @@ function _renderFilterTags() {
 
 function filterUsersTable() {
   const search   = (document.getElementById('userSearch')?.value||'').toLowerCase().trim();
-  const role     = currentUserTab;  // tab replaces the old role dropdown — allUsersCache is already scoped to this role
+  const role     = document.getElementById('roleFilter')?.value||'';
   const status   = document.getElementById('statusFilter')?.value||'';
   const branch   = (document.getElementById('branchFilter')?.value||'').toLowerCase();
   const section  = document.getElementById('sectionFilter')?.value||'';
@@ -2368,7 +2307,7 @@ function filterUsersTable() {
     ${isStudentView?'<th>Branch</th><th>Sec</th><th>Sem</th>':'<th>Department</th>'}
     <th>Face</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody>${list.map(u=>`<tr>
-      <td>${u.id ?? '-'}</td>
+      <td>${u.id}</td>
       <td><strong>${u.full_name}</strong><br><small style="color:var(--muted);">${u.email}</small></td>
       <td><code>${u.inst_id}</code></td>
       <td><span class="badge ${u.role==='admin'?'bg-red':u.role==='faculty'?'bg-blue':'bg-gray'}">${u.role}</span></td>
@@ -2380,12 +2319,12 @@ function filterUsersTable() {
       <td>${u.face_registered?'<span style="color:#2d9e6b;font-size:.82rem;">=</span>':'<span style="color:#9ca3af;font-size:.82rem;">-</span>'}</td>
       <td><span class="badge ${u.status==='active'?'bg-green':u.status==='pending'?'bg-orange':'bg-red'}">${u.status}</span></td>
       <td style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${u.status==='pending'?`<button class="btn btn-success btn-sm" onclick="approveUser('${u.inst_id}')"><i class="fa-solid fa-check"></i> Approve</button>`:''}
-        ${u.status==='active'?`<button class="btn btn-outline btn-sm" onclick="setUserStatus('${u.inst_id}','inactive')"><i class="fa-solid fa-ban"></i></button>`:''}
-        ${u.status==='inactive'?`<button class="btn btn-success btn-sm" onclick="setUserStatus('${u.inst_id}','active')"><i class="fa-solid fa-check"></i></button>`:''}
-        <button class="btn btn-outline btn-sm" onclick="openEditUser('${u.inst_id}')" title="Edit user"><i class="fa-solid fa-pen"></i></button>
-        <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal('${u.inst_id}','${u.full_name.replace(/'/g,'')}')" title="Reset password"><i class="fa-solid fa-key"></i></button>
-        ${u.inst_id!==currentUser.inst_id?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.inst_id}','${u.full_name}')"><i class="fa-solid fa-trash"></i></button>`:''}
+        ${u.status==='pending'?`<button class="btn btn-success btn-sm" onclick="approveUser(${u.id})"><i class="fa-solid fa-check"></i> Approve</button>`:''}
+        ${u.status==='active'?`<button class="btn btn-outline btn-sm" onclick="setUserStatus(${u.id},'inactive')"><i class="fa-solid fa-ban"></i></button>`:''}
+        ${u.status==='inactive'?`<button class="btn btn-success btn-sm" onclick="setUserStatus(${u.id},'active')"><i class="fa-solid fa-check"></i></button>`:''}
+        <button class="btn btn-outline btn-sm" onclick="openEditUser(${u.id})" title="Edit user"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal(${u.id},'${u.full_name.replace(/'/g,'')}')" title="Reset password"><i class="fa-solid fa-key"></i></button>
+        ${u.id!==currentUser.id?`<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id},'${u.full_name}')"><i class="fa-solid fa-trash"></i></button>`:''}
       </td>
     </tr>`).join('')}</tbody></table></div>`;
 }
@@ -2394,10 +2333,10 @@ function filterUsersTable() {
    EDIT USER - Admin can correct any student/faculty data
 ====================================================== */
 function openEditUser(userId) {
-  const user = (allUsersCache||[]).find(u => u.inst_id === userId);
+  const user = (allUsersCache||[]).find(u => u.id === userId);
   if (!user) { toast('User not found - please reload the page','error'); return; }
 
-  document.getElementById('eu_id').value       = user.inst_id;
+  document.getElementById('eu_id').value       = user.id;
   document.getElementById('eu_role_val').value = user.role;
   document.getElementById('eu_name').value     = user.full_name || '';
   document.getElementById('eu_email').value    = user.email || '';
@@ -2426,7 +2365,7 @@ function openEditUser(userId) {
 }
 
 async function saveEditUser() {
-  const id      = document.getElementById('eu_id').value;
+  const id      = parseInt(document.getElementById('eu_id').value);
   const role    = document.getElementById('eu_role_val').value;
   const name    = document.getElementById('eu_name').value.trim();
   const email   = document.getElementById('eu_email').value.trim();
@@ -2465,7 +2404,7 @@ async function saveEditUser() {
 async function approveUser(id) {
   try {
     await API.patch(`/users/${id}/status`, { status: 'active' });
-    const _u = (allUsersCache||[]).find(x=>x.inst_id===id);
+    const _u = (allUsersCache||[]).find(x=>x.id===id);
     logAudit('APPROVE USER', `Approved ${_u?.full_name||'user'} (${_u?.inst_id||id})`);
     toast('User approved!','success');
     await loadUsersTable();
@@ -2653,8 +2592,8 @@ async function renderPending(c) {
             <td>${u.department||'-'}</td>
             <td>${fmt(u.created_at)}</td>
             <td style="display:flex;gap:6px;">
-              <button class="btn btn-success btn-sm" onclick="approveAndRefresh('${u.inst_id}')"><i class="fa-solid fa-check"></i> Approve</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteAndRefresh('${u.inst_id}','${u.full_name}')"><i class="fa-solid fa-times"></i> Reject</button>
+              <button class="btn btn-success btn-sm" onclick="approveAndRefresh(${u.id})"><i class="fa-solid fa-check"></i> Approve</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteAndRefresh(${u.id},'${u.full_name}')"><i class="fa-solid fa-times"></i> Reject</button>
             </td>
           </tr>`).join('')}</tbody>
         </table></div>`}
@@ -2672,7 +2611,7 @@ async function deleteAndRefresh(id, name) {
 async function approveAll() {
   const data = await API.get('/users?status=pending&limit=500').catch(()=>({users:[]}));
   const pending = data.users||[];
-  await Promise.all(pending.map(u => API.patch(`/users/${u.inst_id}/status`,{status:'active'}).catch(()=>{})));
+  await Promise.all(pending.map(u => API.patch(`/users/${u.id}/status`,{status:'active'}).catch(()=>{})));
   toast(`${pending.length} users approved!`,'success');
   updatePendingBadge();
   await renderPending(document.getElementById('adminContent'));
@@ -2723,12 +2662,9 @@ async function renderCourses(c) {
               <td><code>${co.code}</code></td>
               <td><strong>${co.name}</strong></td>
               <td><span class="badge ${co.course_type==='lab'?'bg-orange':'bg-blue'}">${co.course_type||'theory'}</span></td>
-              <td>${co.credits ?? 3}</td>
+              <td>${co.credits||3}</td>
               <td>
-                <button class="btn btn-outline btn-sm" onclick='openEditCourseModal("${co.id}")' style="margin-right:4px;">
-                  <i class="fa-solid fa-pen"></i>
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteCourse('${co.id}','${co.name.replace(/'/g,'')}')">
+                <button class="btn btn-danger btn-sm" onclick="deleteCourse(${co.id},'${co.name.replace(/'/g,'')}')">
                   <i class="fa-solid fa-trash"></i>
                 </button>
               </td>
@@ -2802,7 +2738,7 @@ function openAddCourseModal() {
         </div>
         <div class="form-group">
           <label class="form-label">Credits</label>
-          <input class="form-control" id="sc_credits" type="number" value="3" min="0" max="6">
+          <input class="form-control" id="sc_credits" type="number" value="3" min="1" max="6">
         </div>
       </div>
       <div class="form-group">
@@ -2844,71 +2780,13 @@ function detectSemFromCode() {
 async function saveSingleCourse() {
   const code    = document.getElementById('sc_code').value.trim().toUpperCase();
   const name    = document.getElementById('sc_name').value.trim();
-  const scCreditsRaw = document.getElementById('sc_credits').value;
-  const credits = scCreditsRaw === '' ? 3 : (parseInt(scCreditsRaw) || 0);
+  const credits = parseInt(document.getElementById('sc_credits').value)||3;
   const type    = document.getElementById('sc_type').value;
   if (!code||!name) { toast('Code and name required','warning'); return; }
   try {
     await API.post('/courses', { code, name, credits, course_type: type });
     document.getElementById('addSingleCourseModal').remove();
     toast(`Course "${name}" added!`, 'success');
-    await renderCourses(document.getElementById('adminContent'));
-  } catch(e) { toast(e.message,'error'); }
-}
-
-function openEditCourseModal(id) {
-  const co = (cachedCourses || []).find(c => c.id === id);
-  if (!co) { toast('Course not found', 'error'); return; }
-  const ex = document.getElementById('editCourseModal');
-  if (ex) ex.remove();
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay show';
-  modal.id = 'editCourseModal';
-  modal.innerHTML = `
-    <div class="modal-box" style="max-width:480px;">
-      <h3><i class="fa-solid fa-pen" style="color:var(--accent);"></i> Edit Course</h3>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Course Code</label>
-          <input class="form-control" value="${co.code}" disabled>
-          <small style="color:var(--muted);">Code can't be changed — delete and re-add if needed.</small>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Credits</label>
-          <input class="form-control" id="ec_credits" type="number" value="${co.credits ?? 3}" min="0" max="6">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Subject Name *</label>
-        <input class="form-control" id="ec_name" value="${co.name.replace(/"/g,'&quot;')}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Type</label>
-        <select class="form-control form-select" id="ec_type">
-          <option value="theory" ${co.course_type==='lab'?'':'selected'}>Theory</option>
-          <option value="lab" ${co.course_type==='lab'?'selected':''}>Lab / Practical</option>
-        </select>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="document.getElementById('editCourseModal').remove()">Cancel</button>
-        <button class="btn btn-accent" onclick="saveEditCourse('${co.id}')"><i class="fa-solid fa-save"></i> Save Changes</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
-}
-
-async function saveEditCourse(id) {
-  const name  = document.getElementById('ec_name').value.trim();
-  const raw   = document.getElementById('ec_credits').value;
-  const credits = raw === '' ? 3 : (parseInt(raw) || 0);
-  const type  = document.getElementById('ec_type').value;
-  if (!name) { toast('Subject name required', 'warning'); return; }
-  try {
-    // course_id/code are required by the CourseCreate schema shape but ignored server-side on PATCH
-    await API.patch(`/courses/${id}`, { course_id: id, code: '', name, credits, course_type: type });
-    document.getElementById('editCourseModal').remove();
-    toast(`Course "${name}" updated!`, 'success');
     await renderCourses(document.getElementById('adminContent'));
   } catch(e) { toast(e.message,'error'); }
 }
@@ -2961,8 +2839,7 @@ async function saveNewCourse() {
   const branch  = getCourseBranch();
   const section = document.getElementById('mc_section')?.value || '';
   const semester= document.getElementById('mc_semester')?.value || '';
-  const mcCreditsRaw = document.getElementById('mc_credits').value;
-  const credits = mcCreditsRaw === '' ? 3 : (parseInt(mcCreditsRaw) || 0);
+  const credits = parseInt(document.getElementById('mc_credits').value)||3;
   if (!code||!name) { toast('Code and name are required','warning'); return; }
   if (!prog)        { toast('Please select a program','warning'); return; }
   const fullBranch = branch ? `${prog} - ${branch}` : prog;
@@ -3017,13 +2894,6 @@ async function renderTimetable(c) {
         <button class="btn btn-outline btn-sm" onclick="checkConflicts()">
           <i class="fa-solid fa-triangle-exclamation"></i> Check Conflicts
         </button>
-        <button class="btn btn-outline btn-sm" onclick="downloadTimetableTemplate()">
-          <i class="fa-solid fa-download"></i> Download Template
-        </button>
-        <button class="btn btn-primary btn-sm" onclick="document.getElementById('ttBulkInput').click()">
-          <i class="fa-solid fa-file-excel"></i> Bulk Import Excel
-        </button>
-        <input type="file" id="ttBulkInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="bulkImportTimetable(this)">
         <button class="btn btn-success btn-sm" onclick="openCopyTimetableModal()">
           <i class="fa-solid fa-copy"></i> Copy to Section
         </button>
@@ -3143,15 +3013,14 @@ async function loadTimetableGrid() {
                     ${DAY_LABELS[day]||day}
                   </td>
                   ${timeSlots.map(ts=>{
-                    // grid[day][ts] is now a LIST of slots — a cell can legitimately
-                    // hold more than one class (e.g. parallel lab batches C1 / C2).
-                    const cellSlots = grid[day]?.[ts] || [];
+                    const slot = grid[day]?.[ts];
                     const [st, et] = ts.split('-');
-                    const chips = cellSlots.map(slot => {
+                    if (slot) {
                       const isLab = slot.course_type === 'lab';
                       const bg = isLab ? '#fff3e0' : '#e8f4fd';
                       const border = isLab ? '#f08e1b' : '#1a3c6e';
-                      return `<div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:6px 8px;cursor:pointer;position:relative;margin-bottom:4px;"
+                      return `<td style="padding:4px;border:1px solid var(--border);">
+                        <div style="background:${bg};border-left:3px solid ${border};border-radius:6px;padding:6px 8px;cursor:pointer;position:relative;"
                              onclick="openSlotEditor('${day}','${st}','${et}',${slot.id},'${branch}','${section}','${sem}')">
                           <div style="font-size:.78rem;font-weight:700;color:${border};line-height:1.2;">${slot.course_code}</div>
                           <div style="font-size:.72rem;color:var(--text);margin:2px 0;line-height:1.3;">${slot.course_name}</div>
@@ -3162,17 +3031,18 @@ async function loadTimetableGrid() {
                             style="position:absolute;top:3px;right:3px;background:none;border:none;color:#e63946;cursor:pointer;font-size:.7rem;padding:2px;">
                             <i class="fa-solid fa-xmark"></i>
                           </button>
-                        </div>`;
-                    }).join('');
-                    // Always show a small "add another" control so a second/third
-                    // parallel batch can be added into the same day/time cell.
-                    const addMore = `<div style="height:${cellSlots.length?'22px':'60px'};display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;color:var(--muted);font-size:${cellSlots.length?'.9rem':'1.2rem'};transition:.15s;"
+                        </div>
+                      </td>`;
+                    } else {
+                      return `<td style="padding:4px;border:1px solid var(--border);">
+                        <div style="height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;color:var(--muted);font-size:1.2rem;transition:.15s;"
                              onmouseover="this.style.background='var(--bg)'"
                              onmouseout="this.style.background=''"
                              onclick="openSlotEditor('${day}','${st}','${et}',null,'${branch}','${section}','${sem}')">
                           <i class="fa-solid fa-plus"></i>
-                        </div>`;
-                    return `<td style="padding:4px;border:1px solid var(--border);vertical-align:top;">${chips}${addMore}</td>`;
+                        </div>
+                      </td>`;
+                    }
                   }).join('')}
                 </tr>`).join('')}
             </tbody>
@@ -3199,104 +3069,6 @@ async function loadTimetableGrid() {
 }
 
 //    Slot Editor Modal                                                         
-/* ==================================================================
-   SEARCHABLE SELECT — turns a long <select> into a type-to-filter
-   dropdown. The underlying <select> is kept (just hidden) so every
-   existing document.getElementById(id).value / onchange listener
-   keeps working unchanged — this only adds a search UI on top.
-   Call it AFTER the select's <option>s are in place (options are
-   snapshotted once, on call).
-   ================================================================== */
-function makeSearchableSelect(selectId) {
-  const select = document.getElementById(selectId);
-  if (!select || select.tagName !== 'SELECT') return;
-
-  // Modals that stay in the DOM across multiple opens (rather than being
-  // rebuilt from scratch each time) reuse the same <select> — re-running
-  // this on an already-wrapped select must refresh its options, not stack
-  // a second wrapper/input on top.
-  if (select._searchableRefresh) { select._searchableRefresh(); return; }
-
-  let options = Array.from(select.options).map(o => ({
-    value: o.value, text: o.textContent, disabled: o.disabled,
-  }));
-
-  const wrapper = document.createElement('div');
-  wrapper.style.position = 'relative';
-  select.parentNode.insertBefore(wrapper, select);
-  wrapper.appendChild(select);
-  select.style.display = 'none';
-
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = select.className || 'form-control';
-  input.placeholder = 'Type to search...';
-  input.autocomplete = 'off';
-  const initSel = options.find(o => o.value === select.value);
-  input.value = initSel ? initSel.text : '';
-  wrapper.insertBefore(input, select);
-
-  const list = document.createElement('div');
-  list.style.cssText = 'position:absolute;top:100%;left:0;right:0;max-height:240px;overflow-y:auto;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 16px rgba(0,0,0,.15);z-index:2000;display:none;margin-top:2px;';
-  wrapper.appendChild(list);
-
-  function renderList(filter) {
-    const f = filter.trim().toLowerCase();
-    const matches = options.filter(o => o.value === '' || o.text.toLowerCase().includes(f));
-    if (!matches.length) {
-      list.innerHTML = '<div style="padding:10px 12px;color:var(--muted);font-size:.85rem;">No matches</div>';
-      return;
-    }
-    list.innerHTML = matches.map(o => `
-      <div class="searchable-opt" data-value="${o.value.replace(/"/g,'&quot;')}"
-           style="padding:8px 12px;cursor:pointer;font-size:.88rem;${o.disabled?'color:var(--muted);font-weight:700;cursor:default;':''}"
-           onmouseover="if(!this.dataset.disabled)this.style.background='var(--bg)'"
-           onmouseout="this.style.background=''"
-           ${o.disabled?'data-disabled="1"':''}>${o.text}</div>`).join('');
-  }
-
-  list.addEventListener('click', e => {
-    const row = e.target.closest('.searchable-opt');
-    if (!row || row.dataset.disabled) return;
-    select.value = row.dataset.value;
-    input.value  = row.textContent;
-    list.style.display = 'none';
-    select.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-
-  input.addEventListener('focus', () => { renderList(''); list.style.display = 'block'; });
-  input.addEventListener('input', () => { renderList(input.value); list.style.display = 'block'; });
-  input.addEventListener('blur', () => {
-    // Delay so a click on a list row registers before we hide it
-    setTimeout(() => {
-      list.style.display = 'none';
-      // If what's typed doesn't match a real option, snap back to the current select value's text
-      const cur = options.find(o => o.value === select.value);
-      input.value = cur ? cur.text : '';
-    }, 150);
-  });
-
-  select._searchableInput = input;
-  // Re-snapshot options + reset displayed text — used when this select's
-  // <option>s get refreshed (e.g. modal re-opened) without rebuilding the DOM.
-  select._searchableRefresh = () => {
-    options = Array.from(select.options).map(o => ({
-      value: o.value, text: o.textContent, disabled: o.disabled,
-    }));
-    const cur = options.find(o => o.value === select.value);
-    input.value = cur ? cur.text : '';
-  };
-}
-
-// Call after programmatically changing a searchable select's .value from
-// other code, so the visible search box text stays in sync.
-function syncSearchableSelect(selectId) {
-  const select = document.getElementById(selectId);
-  if (!select || !select._searchableInput) return;
-  const opt = Array.from(select.options).find(o => o.value === select.value);
-  select._searchableInput.value = opt ? opt.textContent : '';
-}
-
 async function openSlotEditor(day, startTime, endTime, slotId, branch, section, semester) {
   const ex = document.getElementById('slotEditorModal'); if (ex) ex.remove();
 
@@ -3350,7 +3122,7 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
         </label>
         <select class="form-control form-select" id="se_faculty">
           <option value="">-- Select Teacher --</option>
-          ${facList.map(f=>`<option value="${f.inst_id}">${f.full_name} (${f.inst_id})</option>`).join('')}
+          ${facList.map(f=>`<option value="${f.id}">${f.full_name} (${f.inst_id})</option>`).join('')}
         </select>
       </div>
       <div class="form-row">
@@ -3400,7 +3172,6 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
       if (isFree) {
         facGroup.style.display = 'none';
         document.getElementById('se_faculty').value = '';
-        syncSearchableSelect('se_faculty');
       } else {
         facGroup.style.display = 'block';
       }
@@ -3410,14 +3181,11 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
     const typeInput = document.querySelector(`input[name="se_type"][value="${type}"]`);
     if (typeInput) typeInput.checked = true;
   });
-
-  makeSearchableSelect('se_course');
-  makeSearchableSelect('se_faculty');
 }
 
 async function saveSlotFromEditor(slotId, day, startTime, endTime, branch, section, semester) {
-  const courseId  = document.getElementById('se_course').value;
-  const facultyId = document.getElementById('se_faculty').value || null;
+  const courseId  = parseInt(document.getElementById('se_course').value);
+  const facultyId = parseInt(document.getElementById('se_faculty').value) || null;
   const room      = document.getElementById('se_room').value.trim();
   const subsec    = document.getElementById('se_subsection').value.trim().toUpperCase();
   const type      = document.querySelector('input[name="se_type"]:checked')?.value || 'theory';
@@ -3619,7 +3387,7 @@ async function renderAllSessions(c) {
   const [sessions, courses, users] = await Promise.all([
     API.get(`/sessions?limit=200&branch=${encodeURIComponent(branch)}&section=${encodeURIComponent(section)}`).catch(()=>({sessions:[]})),
     API.get('/courses').catch(()=>[]),
-    API.get('/users?role=faculty&limit=500').catch(()=>({users:[]})),
+    API.get('/users?limit=500').catch(()=>({users:[]})),
   ]);
   const ss = sessions.sessions||[];
   const cs = Array.isArray(courses)?courses:[];
@@ -3637,7 +3405,7 @@ async function renderAllSessions(c) {
           <thead><tr><th>Title</th><th>Course</th><th>Faculty</th><th>Location</th><th>Scheduled</th><th>Status</th></tr></thead>
           <tbody>${ss.map(s=>{
             const co = cs.find(x=>x.id===s.course_id);
-            const fac = us.find(x=>x.inst_id===s.faculty_id);
+            const fac = us.find(x=>x.id===s.faculty_id);
             return `<tr>
               <td><strong>${s.title}</strong></td>
               <td>${co?.name||'?'} <small style="color:var(--muted);">(${co?.code||''})</small></td>
@@ -3679,7 +3447,7 @@ async function renderReports(c) {
     const tbody = document.getElementById('reportTbody');
     const rows = await Promise.all(students.map(async stu => {
       try {
-        const att = await API.get(`/attendance/student/${stu.inst_id}?limit=500`);
+        const att = await API.get(`/attendance/student/${stu.id}?limit=500`);
         const present = (att.records||[]).filter(a=>a.status==='present').length;
         const p = pct(present, closed.length);
         return `<tr>
@@ -4333,7 +4101,6 @@ async function openExtraClassModal() {
   } catch(e) {
     ec_course.innerHTML = '<option value="">Failed to load courses</option>';
   }
-  makeSearchableSelect('ec_course');
 
   // Pre-fill branch/section from faculty's own timetable context if available
   document.getElementById('ec_title').value    = '';
@@ -4375,7 +4142,7 @@ async function openExtraClassModal() {
 }
 
 async function saveExtraClass() {
-  const courseId = document.getElementById('ec_course').value;
+  const courseId = parseInt(document.getElementById('ec_course').value);
   const title    = document.getElementById('ec_title').value.trim();
   const branch   = getEcBranch();  // exact 'Course - Branch' format from dropdown
   const section  = document.getElementById('ec_section').value.trim();
@@ -4637,7 +4404,7 @@ async function loadAttSheet() {
         <div class="tbl-wrap"><table class="tbl">
           <thead><tr><th>#</th><th>Name</th><th>Enrollment No.</th><th>Branch</th><th>Sec</th><th>Status</th><th>Time</th><th>${isEditable ? 'Change' : ''}</th></tr></thead>
           <tbody>${students.map((stu,i)=>{
-            const rec = records.find(r=>r.student_id===stu.inst_id);
+            const rec = records.find(r=>r.student_id===stu.id);
             const status = rec?.status || 'absent';
             return '<tr>' +
               '<td>'+(i+1)+'</td>' +
@@ -4648,7 +4415,7 @@ async function loadAttSheet() {
               '<td><span class="badge '+(status==='present'?'bg-green':status==='late'?'bg-orange':'bg-red')+'">'+status+'</span></td>' +
               '<td style="font-size:.78rem;">'+(rec?.marked_at?fmtDT(rec.marked_at):'-')+'</td>' +
               '<td>'+(isEditable ?
-                '<button class="btn btn-sm '+(status==='present'?'btn-danger':'btn-success')+'" onclick="toggleAtt('+sid+',\''+stu.inst_id+'\',\''+status+'\')">'+
+                '<button class="btn btn-sm '+(status==='present'?'btn-danger':'btn-success')+'" onclick="toggleAtt('+sid+','+stu.id+',\''+status+'\')">'+
                 (status==='present'?'Mark Absent':'Mark Present')+'</button>' :
                 '<span style="color:var(--muted);font-size:.8rem;">Locked</span>'
               )+'</td>' +
@@ -4675,13 +4442,12 @@ async function openCreateSession() {
   sel.innerHTML = cachedCourses.length
     ? cachedCourses.map(c=>`<option value="${c.id}">${c.name} (${c.code})</option>`).join('')
     : '<option value="">No courses available - ask admin to add courses</option>';
-  makeSearchableSelect('ms_course');
   document.getElementById('ms_datetime').value = new Date().toISOString().slice(0,16);
   openModal('createSessionModal');
 }
 
 async function saveNewSession() {
-  const courseId = document.getElementById('ms_course').value;
+  const courseId = parseInt(document.getElementById('ms_course').value);
   const title    = document.getElementById('ms_title').value.trim()||'Lecture';
   const location = document.getElementById('ms_location').value.trim();
   const dt       = document.getElementById('ms_datetime').value;
@@ -4731,7 +4497,7 @@ async function renderStuDashboard(c) {
 
   // Fetch all data in parallel
   const [attData, sessData, ttData, activeData] = await Promise.all([
-    API.get(`/attendance/student/${currentUser.inst_id}?limit=500`).catch(()=>({records:[]})),
+    API.get(`/attendance/student/${currentUser.id}?limit=500`).catch(()=>({records:[]})),
     API.get(`/sessions?limit=500&branch=${encodeURIComponent(branch)}&section=${encodeURIComponent(section)}`).catch(()=>({sessions:[]})),
     API.get('/timetable').catch(()=>[]),
     API.get(`/sessions/active?branch=${encodeURIComponent(branch)}&section=${encodeURIComponent(section)}`).catch(()=>[]),
@@ -5193,7 +4959,7 @@ async function renderStuScan(c) {
   }
 
   // Check if already marked
-  const attData = await API.get(`/attendance/student/${currentUser.inst_id}?limit=200`).catch(()=>({records:[]}));
+  const attData = await API.get(`/attendance/student/${currentUser.id}?limit=200`).catch(()=>({records:[]}));
   const alreadyMarked = (attData.records||[]).find(a=>a.session_id===active.id&&a.status==='present');
   if (alreadyMarked) {
     const co = (await API.get('/courses').catch(()=>[])).find(x=>x.id===active.course_id);
@@ -5594,10 +5360,10 @@ async function renderStuHistory(c) {
   const branch  = currentUser.branch  || currentUser.department || '';
   const section = currentUser.section || '';
   const [attData, sessions, courses, insights] = await Promise.all([
-    API.get(`/attendance/student/${currentUser.inst_id}?limit=500`).catch(()=>({records:[]})),
+    API.get(`/attendance/student/${currentUser.id}?limit=500`).catch(()=>({records:[]})),
     API.get(`/sessions?limit=200&branch=${encodeURIComponent(branch)}&section=${encodeURIComponent(section)}`).catch(()=>({sessions:[]})),
     API.get('/courses').catch(()=>[]),
-    API.get(`/attendance/insights/student/${currentUser.inst_id}`).catch(()=>null),
+    API.get(`/attendance/insights/student/${currentUser.id}`).catch(()=>null),
   ]);
   const att    = attData.records||[];
   const ss     = sessions.sessions||[];
@@ -5680,7 +5446,7 @@ async function renderStuHistory(c) {
 
 async function exportStudentExcel() {
   try {
-    const url = `${API.base}/attendance/export/student/${currentUser.inst_id}?format=excel`;
+    const url = `${API.base}/attendance/export/student/${currentUser.id}?format=excel`;
     const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sas_token')}` } });
     if (!res.ok) throw new Error('Export failed');
     const blob = await res.blob();
@@ -5694,7 +5460,7 @@ async function exportStudentExcel() {
 
 async function exportStudentCSV() {
   try {
-    const url = `${API.base}/attendance/export/student/${currentUser.inst_id}?format=csv`;
+    const url = `${API.base}/attendance/export/student/${currentUser.id}?format=csv`;
     const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sas_token')}` } });
     if (!res.ok) throw new Error('Export failed');
     const blob = await res.blob();
@@ -5900,7 +5666,7 @@ async function captureRegistrationFace() {
     const face_descriptor = JSON.stringify(Array.from(detection.descriptor));
     if (status) status.textContent = 'Saving to server...';
     // Save to backend
-    const updated = await API.post('/users/' + currentUser.inst_id + '/register-face', { image_b64, face_descriptor });
+    const updated = await API.post('/users/' + currentUser.id + '/register-face', { image_b64, face_descriptor });
     // Update currentUser
     currentUser.face_registered = true;
     currentUser.face_embedding  = face_descriptor;
@@ -6327,10 +6093,10 @@ function searchStudentsForPromo() {
           <td style="font-size:.78rem;">${s.branch||'-'}</td>
           <td>${s.sub_section||'-'}</td>
           <td style="display:flex;gap:5px;">
-            <button class="btn btn-primary btn-sm" onclick="openEditStudentModal('${s.inst_id}','${s.full_name.replace(/'/g,'')}','${s.section||''}','${s.semester||''}','${s.sub_section||''}','${(s.branch||'').replace(/'/g,'')}')">
+            <button class="btn btn-primary btn-sm" onclick="openEditStudentModal(${s.id},'${s.full_name.replace(/'/g,'')}','${s.section||''}','${s.semester||''}','${s.sub_section||''}','${(s.branch||'').replace(/'/g,'')}')">
               <i class="fa-solid fa-pen"></i> Edit
             </button>
-            <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal('${s.inst_id}','${s.full_name.replace(/'/g,'')}')">
+            <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal(${s.id},'${s.full_name.replace(/'/g,'')}')">
               <i class="fa-solid fa-key"></i> Reset PWD
             </button>
           </td>
@@ -6372,7 +6138,7 @@ function openEditStudentModal(id, name, section, semester, subsection, branch) {
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="document.getElementById('editStudentModal').remove()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveEditStudent('${id}')"><i class="fa-solid fa-save"></i> Save Changes</button>
+        <button class="btn btn-primary" onclick="saveEditStudent(${id})"><i class="fa-solid fa-save"></i> Save Changes</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -6412,7 +6178,7 @@ function openResetPasswordModal(id, name) {
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="document.getElementById('resetPwdModal').remove()">Cancel</button>
-        <button class="btn btn-accent" onclick="doResetPassword('${id}')"><i class="fa-solid fa-key"></i> Reset Password</button>
+        <button class="btn btn-accent" onclick="doResetPassword(${id})"><i class="fa-solid fa-key"></i> Reset Password</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -6440,56 +6206,6 @@ async function endAllStuckSessions() {
   } catch(e) { toast(e.message||'Failed','error'); }
 }
 
-
-
-async function downloadTimetableTemplate() {
-  try {
-    const res = await fetch(API.base + '/timetable/bulk-template', {
-      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('sas_token') }
-    });
-    if (!res.ok) throw new Error('Download failed');
-    const blob = await res.blob();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'timetable_template.xlsx';
-    a.click();
-    toast('Template downloaded!', 'success');
-  } catch(e) { toast(e.message || 'Download failed', 'error'); }
-}
-
-async function bulkImportTimetable(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const clearExisting = confirm(
-    'Clear existing timetable slots for sections in this file before importing?' + String.fromCharCode(10) +
-    'OK = Clear + Import fresh' + String.fromCharCode(10) +
-    'Cancel = Add to existing'
-  );
-  const wrap = document.getElementById('ttGridWrap');
-  const orig = wrap ? wrap.innerHTML : '';
-  if (wrap) wrap.innerHTML = '<div class="card" style="text-align:center;padding:30px;"><div class="big-spinner" style="margin:0 auto 16px;width:40px;height:40px;border-width:3px;"></div><div style="font-weight:600;">Importing timetable...</div></div>';
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch(
-      API.base + '/timetable/bulk-import?clear_existing=' + clearExisting,
-      { method: 'POST', headers: { 'Authorization': 'Bearer ' + localStorage.getItem('sas_token') }, body: formData }
-    );
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Import failed');
-    const hasErrors = data.errors && data.errors.length > 0;
-    if (wrap) wrap.innerHTML = '<div class="card"><div class="section-title"><i class="fa-solid fa-circle-check" style="color:var(--success);"></i> Import Complete</div>' +
-      '<div style="margin-bottom:14px;"><span style="background:#d1fae5;color:#065f46;border-radius:20px;padding:6px 16px;font-size:.88rem;font-weight:600;">' + data.added + ' slots added</span>' +
-      (hasErrors ? ' <span style="background:#fee2e2;color:#991b1b;border-radius:20px;padding:6px 16px;font-size:.88rem;font-weight:600;">' + data.errors.length + ' errors</span>' : '') + '</div>' +
-      (hasErrors ? '<div style="background:#fef3c7;border-radius:8px;padding:12px;margin-bottom:12px;font-size:.78rem;color:#92400e;">' + data.errors.map(function(e){return '- '+e;}).join('<br>') + '</div>' : '') +
-      '<button class="btn btn-primary" onclick="loadTimetableGrid()"><i class="fa-solid fa-table"></i> View Timetable</button></div>';
-    toast(data.added + ' slots imported!', 'success');
-  } catch(e) {
-    if (wrap) wrap.innerHTML = orig;
-    toast(e.message || 'Import failed', 'error');
-  }
-  input.value = '';
-}
 
 </script>
 <!-- ═══════════════ BULK IMPORT MODAL ═══════════════ -->
