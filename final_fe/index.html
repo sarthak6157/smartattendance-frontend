@@ -1409,18 +1409,28 @@ button, input, select, textarea { font-family: inherit; }
       <label class="form-label">Class Title *</label>
       <input class="form-control" id="ec_title" placeholder="e.g. Extra Lecture — Unit 4 Revision">
     </div>
+    <div class="form-group">
+      <label class="form-label">College <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
+      <select class="form-control form-select" id="ec_college">
+        <option value="">— Select College (optional) —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Course / Program <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
+      <select class="form-control form-select" id="ec_course_prog" onchange="updateEcBranches()" disabled>
+        <option value="">— Select College first —</option>
+      </select>
+    </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Branch <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
-        <select class="form-control form-select" id="ec_branch" onchange="onEcBranchChange()">
-          <option value="">— All branches —</option>
+        <label class="form-label">Branch / Specialization</label>
+        <select class="form-control form-select" id="ec_branch">
+          <option value="">— Select branch (optional) —</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">Section <small style="color:var(--muted);font-weight:400;">(optional)</small></label>
-        <select class="form-control form-select" id="ec_section">
-          <option value="">— All sections —</option>
-        </select>
+        <input class="form-control" id="ec_section" placeholder="e.g. A" maxlength="10">
       </div>
     </div>
     <div class="form-row">
@@ -1501,6 +1511,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCollegeCascade('regCollege', 'regCourse', 'regBranch');
   setupCollegeCascade('mu_college', 'mu_course', 'mu_branch');
   setupCollegeCascade('mc_college', 'mc_program', 'mc_branch_sel');
+  setupCollegeCascade('ec_college', 'ec_course_prog', 'ec_branch');
 });
 
 /* ========== LOADING OVERLAY ================== */
@@ -2660,6 +2671,14 @@ function buildBranchOptions(course, selectId) {
     '<option value="">All branches (no filter)</option>';
 }
 
+function updateEcBranches() {
+  const course = document.getElementById('ec_course_prog')?.value || '';
+  const brSel  = document.getElementById('ec_branch');
+  if (!brSel) return;
+  if (!course) { brSel.innerHTML = '<option value="">- Select course first -</option>'; return; }
+  buildBranchOptions(course, 'ec_branch');
+}
+
 function updateSlBranches() {
   const course = document.getElementById('sl_course_prog')?.value || '';
   const brSel  = document.getElementById('sl_branch');
@@ -2670,25 +2689,6 @@ function updateSlBranches() {
 
 function getEcBranch() {
   return (document.getElementById('ec_branch')?.value || '').trim();
-}
-
-// When a branch is picked, narrow the Section dropdown to sections that
-// actually exist for real students in that branch (avoids typing a section
-// nobody is in, which would make the session invisible to everyone).
-async function onEcBranchChange() {
-  const branch = getEcBranch();
-  const secEl  = document.getElementById('ec_section');
-  if (!secEl) return;
-  if (!branch) { secEl.innerHTML = '<option value="">— All sections —</option>'; return; }
-  secEl.innerHTML = '<option value="">Loading...</option>';
-  try {
-    const data = await API.get(`/users?role=student&branch=${encodeURIComponent(branch)}&limit=500`);
-    const sections = [...new Set((data.users || []).map(u => u.section).filter(Boolean))].sort();
-    secEl.innerHTML = '<option value="">— All sections —</option>' +
-      sections.map(s => `<option value="${s}">${s}</option>`).join('');
-  } catch (e) {
-    secEl.innerHTML = '<option value="">— All sections —</option>';
-  }
 }
 
 function getSlBranch() {
@@ -4516,25 +4516,10 @@ async function openExtraClassModal() {
 
   // Pre-fill branch/section from faculty's own timetable context if available
   document.getElementById('ec_title').value    = '';
-
-  // Branch/Section options are pulled straight from real student records
-  // (same source as the working Manage Users filters) so the value we send
-  // to the backend always exactly matches what's stored on the students —
-  // picking from a College/Programme list produced a differently-formatted
-  // string that silently failed to match, hiding the session from students.
-  const brEl  = document.getElementById('ec_branch');
-  const secEl = document.getElementById('ec_section');
-  if (brEl)  brEl.innerHTML  = '<option value="">Loading branches...</option>';
-  if (secEl) secEl.innerHTML = '<option value="">— All sections —</option>';
-  try {
-    const opts = await API.get('/users/filter-options');
-    if (brEl) {
-      brEl.innerHTML = '<option value="">— All branches —</option>' +
-        (opts.branches || []).map(b => `<option value="${b}">${b}</option>`).join('');
-    }
-  } catch (e) {
-    if (brEl) brEl.innerHTML = '<option value="">— All branches —</option>';
-  }
+  const cpEl = document.getElementById('ec_course_prog');
+  if (cpEl) { cpEl.value = ''; }
+  const brEl = document.getElementById('ec_branch');
+  if (brEl) brEl.innerHTML = '<option value="">- Select course first -</option>';
   document.getElementById('ec_location').value = '';
   document.getElementById('ec_grace').value    = '15';
 
