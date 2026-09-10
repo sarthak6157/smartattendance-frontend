@@ -956,14 +956,14 @@ button, input, select, textarea { font-family: inherit; }
      <div style="background:#f0f7ff;border-radius:10px;padding:14px;margin-bottom:14px;border:1.5px solid #dbeafe;">
        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
          <div style="font-size:.78rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;"><i class="fa-solid fa-graduation-cap"></i> Academic Details</div>
-         <span style="font-size:.73rem;color:var(--muted);font-weight:400;">(optional — can fill later)</span>
+         <span style="font-size:.73rem;color:var(--muted);font-weight:400;">(Course required — rest optional)</span>
        </div>
 
        <!-- Course -->
        <div class="form-group">
-         <label class="form-label">Course / Program</label>
+         <label class="form-label">Course / Program *</label>
          <select class="form-control form-select" id="regCourse" onchange="updateBranches()">
-           <option value="">— Select Course (optional) —</option>
+           <option value="">— Select Course —</option>
            <option value="B.Tech">B.Tech (Bachelor of Technology)</option>
            <option value="B.E">B.E (Bachelor of Engineering)</option>
            <option value="BCA">BCA (Bachelor of Computer Applications)</option>
@@ -2123,9 +2123,8 @@ async function doRegister() {
   if (!name)   { toast('Please enter your full name','warning'); return; }
   if (!enroll) { toast('Please enter your enrollment number','warning'); return; }
   if (!email)  { toast('Please enter your email','warning'); return; }
-  if (!pass)   { toast('Please set a password','warning'); return; }
-  // Academic fields are all optional - no mandatory check
-  // section and semester are optional
+  if (!course) { toast('Please select your Course / Program','warning'); return; }
+  // Branch/Section/Semester remain optional
   if (!pass)    { toast('Please set a password','warning'); return; }
   if (pass !== pass2) { toast('Passwords do not match','error'); return; }
   if (pass.length < 6){ toast('Password must be at least 6 characters','warning'); return; }
