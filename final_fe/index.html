@@ -959,19 +959,24 @@ button, input, select, textarea { font-family: inherit; }
          <span style="font-size:.73rem;color:var(--muted);font-weight:400;">(optional — can fill later)</span>
        </div>
 
-       <!-- College -->
-       <div class="form-group">
-         <label class="form-label">College</label>
-         <select class="form-control form-select" id="regCollege">
-           <option value="">— Select College (optional) —</option>
-         </select>
-       </div>
-
        <!-- Course -->
        <div class="form-group">
          <label class="form-label">Course / Program</label>
-         <select class="form-control form-select" id="regCourse" onchange="updateBranches()" disabled>
-           <option value="">— Select College first —</option>
+         <select class="form-control form-select" id="regCourse" onchange="updateBranches()">
+           <option value="">— Select Course (optional) —</option>
+           <option value="B.Tech">B.Tech (Bachelor of Technology)</option>
+           <option value="B.E">B.E (Bachelor of Engineering)</option>
+           <option value="BCA">BCA (Bachelor of Computer Applications)</option>
+           <option value="MCA">MCA (Master of Computer Applications)</option>
+           <option value="MBA">MBA (Master of Business Administration)</option>
+           <option value="B.Pharma">B.Pharma (Bachelor of Pharmacy)</option>
+           <option value="M.Tech">M.Tech (Master of Technology)</option>
+           <option value="B.Sc">B.Sc (Bachelor of Science)</option>
+           <option value="M.Sc">M.Sc (Master of Science)</option>
+           <option value="BBA">BBA (Bachelor of Business Administration)</option>
+           <option value="B.Com">B.Com (Bachelor of Commerce)</option>
+           <option value="LLB">LLB (Bachelor of Laws)</option>
+           <option value="MBBS">MBBS (Bachelor of Medicine)</option>
          </select>
        </div>
 
@@ -1189,15 +1194,20 @@ button, input, select, textarea { font-family: inherit; }
       <div style="background:#f0f7ff;border-radius:8px;padding:12px;margin-bottom:10px;border:1px solid #dbeafe;">
         <div style="font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;"><i class="fa-solid fa-graduation-cap"></i> Academic Details</div>
         <div class="form-group">
-          <label class="form-label">College *</label>
-          <select class="form-control form-select" id="mu_college">
-            <option value="">— Select College —</option>
-          </select>
-        </div>
-        <div class="form-group">
           <label class="form-label">Course / Program *</label>
-          <select class="form-control form-select" id="mu_course" onchange="updateAdminBranches()" disabled>
-            <option value="">— Select College first —</option>
+          <select class="form-control form-select" id="mu_course" onchange="updateAdminBranches()">
+            <option value="">— Select Course —</option>
+            <option value="B.Tech">B.Tech (Bachelor of Technology)</option>
+            <option value="B.E">B.E (Bachelor of Engineering)</option>
+            <option value="BCA">BCA (Bachelor of Computer Applications)</option>
+            <option value="MCA">MCA (Master of Computer Applications)</option>
+            <option value="MBA">MBA (Master of Business Administration)</option>
+            <option value="B.Pharma">B.Pharma (Bachelor of Pharmacy)</option>
+            <option value="M.Tech">M.Tech (Master of Technology)</option>
+            <option value="B.Sc">B.Sc (Bachelor of Science)</option>
+            <option value="BBA">BBA (Bachelor of Business Administration)</option>
+            <option value="LLB">LLB (Bachelor of Laws)</option>
+            <option value="MBBS">MBBS</option>
           </select>
         </div>
         <div class="form-group" id="mu_branch_group" style="display:none;">
@@ -1409,28 +1419,18 @@ button, input, select, textarea { font-family: inherit; }
       <label class="form-label">Class Title *</label>
       <input class="form-control" id="ec_title" placeholder="e.g. Extra Lecture — Unit 4 Revision">
     </div>
-    <div class="form-group">
-      <label class="form-label">College <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
-      <select class="form-control form-select" id="ec_college">
-        <option value="">— Select College (optional) —</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Course / Program <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
-      <select class="form-control form-select" id="ec_course_prog" onchange="updateEcBranches()" disabled>
-        <option value="">— Select College first —</option>
-      </select>
-    </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Branch / Specialization</label>
-        <select class="form-control form-select" id="ec_branch">
-          <option value="">— Select branch (optional) —</option>
+        <label class="form-label">Branch <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
+        <select class="form-control form-select" id="ec_branch" onchange="onEcBranchChange()">
+          <option value="">— All branches —</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">Section <small style="color:var(--muted);font-weight:400;">(optional)</small></label>
-        <input class="form-control" id="ec_section" placeholder="e.g. A" maxlength="10">
+        <select class="form-control form-select" id="ec_section">
+          <option value="">— All sections —</option>
+        </select>
       </div>
     </div>
     <div class="form-row">
@@ -1508,10 +1508,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (window.innerWidth <= 768) closeSidebar();
     });
   });
-  setupCollegeCascade('regCollege', 'regCourse', 'regBranch');
-  setupCollegeCascade('mu_college', 'mu_course', 'mu_branch');
   setupCollegeCascade('mc_college', 'mc_program', 'mc_branch_sel');
-  setupCollegeCascade('ec_college', 'ec_course_prog', 'ec_branch');
 });
 
 /* ========== LOADING OVERLAY ================== */
@@ -2671,14 +2668,6 @@ function buildBranchOptions(course, selectId) {
     '<option value="">All branches (no filter)</option>';
 }
 
-function updateEcBranches() {
-  const course = document.getElementById('ec_course_prog')?.value || '';
-  const brSel  = document.getElementById('ec_branch');
-  if (!brSel) return;
-  if (!course) { brSel.innerHTML = '<option value="">- Select course first -</option>'; return; }
-  buildBranchOptions(course, 'ec_branch');
-}
-
 function updateSlBranches() {
   const course = document.getElementById('sl_course_prog')?.value || '';
   const brSel  = document.getElementById('sl_branch');
@@ -2689,6 +2678,25 @@ function updateSlBranches() {
 
 function getEcBranch() {
   return (document.getElementById('ec_branch')?.value || '').trim();
+}
+
+// When a branch is picked, narrow the Section dropdown to sections that
+// actually exist for real students in that branch (avoids typing a section
+// nobody is in, which would make the session invisible to everyone).
+async function onEcBranchChange() {
+  const branch = getEcBranch();
+  const secEl  = document.getElementById('ec_section');
+  if (!secEl) return;
+  if (!branch) { secEl.innerHTML = '<option value="">— All sections —</option>'; return; }
+  secEl.innerHTML = '<option value="">Loading...</option>';
+  try {
+    const data = await API.get(`/users?role=student&branch=${encodeURIComponent(branch)}&limit=500`);
+    const sections = [...new Set((data.users || []).map(u => u.section).filter(Boolean))].sort();
+    secEl.innerHTML = '<option value="">— All sections —</option>' +
+      sections.map(s => `<option value="${s}">${s}</option>`).join('');
+  } catch (e) {
+    secEl.innerHTML = '<option value="">— All sections —</option>';
+  }
 }
 
 function getSlBranch() {
@@ -4516,10 +4524,25 @@ async function openExtraClassModal() {
 
   // Pre-fill branch/section from faculty's own timetable context if available
   document.getElementById('ec_title').value    = '';
-  const cpEl = document.getElementById('ec_course_prog');
-  if (cpEl) { cpEl.value = ''; }
-  const brEl = document.getElementById('ec_branch');
-  if (brEl) brEl.innerHTML = '<option value="">- Select course first -</option>';
+
+  // Branch/Section options are pulled straight from real student records
+  // (same source as the working Manage Users filters) so the value we send
+  // to the backend always exactly matches what's stored on the students —
+  // picking from a College/Programme list produced a differently-formatted
+  // string that silently failed to match, hiding the session from students.
+  const brEl  = document.getElementById('ec_branch');
+  const secEl = document.getElementById('ec_section');
+  if (brEl)  brEl.innerHTML  = '<option value="">Loading branches...</option>';
+  if (secEl) secEl.innerHTML = '<option value="">— All sections —</option>';
+  try {
+    const opts = await API.get('/users/filter-options');
+    if (brEl) {
+      brEl.innerHTML = '<option value="">— All branches —</option>' +
+        (opts.branches || []).map(b => `<option value="${b}">${b}</option>`).join('');
+    }
+  } catch (e) {
+    if (brEl) brEl.innerHTML = '<option value="">— All branches —</option>';
+  }
   document.getElementById('ec_location').value = '';
   document.getElementById('ec_grace').value    = '15';
 
