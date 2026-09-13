@@ -1936,33 +1936,117 @@ function routeUser(user) {
 }
 
 /* ==================================================================
-   Real TMU College → Programme → Specialization structure, from the
-   official Programmes Detail & Admission Criteria fee structure.
+   Real TMU College -> Programme -> Specialization structure.
+   Regenerated directly from TMU_Programmes_and_Specializations.xlsx
+   (the official Programmes & Specializations sheet) on 2026-09-14.
+   Every programme name below is unique across the whole map, so
+   BRANCH_MAP[programme] always resolves correctly regardless of which
+   college it was selected under (two colleges that both had a plain
+   "B.Sc."/"M.Sc." entry with DIFFERENT specializations were disambiguated,
+   e.g. "B.Sc. (Medical)" vs "B.Sc. (Paramedical)" vs "B.Sc. (ZBC/PCM)").
    ================================================================== */
 const TMU_COLLEGES = {
-  "Medical College & Research Centre": ["MBBS", "MD", "MS", "B.Sc. Medical", "M.Sc. Medical"],
-  "Dental College & Research Centre": ["BDS", "MDS"],
-  "College of Nursing": ["ANM (Diploma)", "B.Sc. Nursing", "Post Basic B.Sc. Nursing", "M.Sc. Nursing"],
-  "College of Paramedical Sciences": ["B.Sc. (Paramedical)", "B.Sc. (Forensic Science)", "B.OPTM (Optometry)", "M.Sc. (Paramedical)", "Diploma (Technician)"],
-  "Department of Physiotherapy": ["BPT", "MPT"],
-  "College of Pharmacy": ["D.Pharm.", "B.Pharm.", "B.Pharm. (Lateral Entry)", "Pharm.D.", "Pharm.D. (Post Baccalaureate)", "M.Pharm"],
-  "College of Management (TMIMT)": ["BBA", "BBA (Honours)", "B.Com (Honours)", "MBA", "MBA Hospital Management", "MBA Corporate with Global Exposure"],
-  "College of Computing Sciences & IT": ["BCA (Honours)", "MCA", "B.Tech (CSE)", "B.Tech (CSE) Lateral Entry", "M.Tech (CSE)", "BSc (Animation)", "BSc Computer Science (Honours)", "M.Sc. (in collaboration with Aivancity, France)"],
-  "Faculty of Engineering": ["B.Tech", "B.Tech Lateral Entry", "M.Tech"],
-  "TMIMT College of Physical Education": ["B.P.Ed.", "M.P.Ed.", "BPES (Honours)"],
-  "College of Law & Legal Studies": ["B.A.-LL.B. (Hons.)", "B.B.A.-LL.B. (Hons.)", "B.Com.-LL.B. (Hons.)", "LL.M."],
-  "Faculty of Education": ["B.Ed.", "M.Ed.", "B.El.Ed.", "D.El.Ed. (BTC)", "ITEP - Secondary (Science)"],
-  "Faculty of Humanities & Social Sciences": ["BA English (Honours)", "BA Economics (Honours)", "BA Psychology (Honours)", "B.LIS", "M.LIS", "B.A.", "B.Sc. (ZBC/PCM)"],
-  "College of Agriculture Sciences": ["B.Sc. Agriculture (Honours)", "M.Sc. Agriculture"],
-  "College of Fine Arts": ["BFA (Honours)", "M.F.A."],
-  "Doctoral Programmes (Ph.D)": ["Ph.D"],
-  "Centre for Jain Studies": ["B.A. (Jainology)", "M.A. (Jainology)"],
+  "Medical College & Research Centre": [
+    "MBBS",
+    "MD",
+    "MS",
+    "B.Sc. (Medical)",
+    "M.Sc. (Medical)"
+  ],
+  "Dental College & Research Centre": [
+    "BDS",
+    "MDS"
+  ],
+  "College of Nursing": [
+    "ANM",
+    "B.Sc. Nursing",
+    "Post Basic B.Sc. Nursing",
+    "M.Sc. Nursing"
+  ],
+  "College of Paramedical Sciences": [
+    "Diploma",
+    "B.Sc. (Paramedical)",
+    "B.Sc. (Hons)",
+    "B.OPTM",
+    "B.Sc. (NEP)",
+    "M.Sc. (Paramedical)"
+  ],
+  "Department of Physiotherapy": [
+    "BPT",
+    "MPT"
+  ],
+  "College of Pharmacy": [
+    "D.Pharm.",
+    "B.Pharm.",
+    "Pharm.D.",
+    "M.Pharm."
+  ],
+  "College of Management (TMIMT)": [
+    "B.Com. (Hons)",
+    "BBA (Hons)",
+    "MBA"
+  ],
+  "College of Computing Sciences & IT": [
+    "B.Tech. (CSE)",
+    "B.Tech. (CSE) Lateral Entry",
+    "M.Tech. (CSE)",
+    "BCA (Hons)",
+    "MCA",
+    "B.Sc. Animation (Hons)",
+    "B.Sc. Computer Science (Hons)",
+    "M.Sc. (with Aivancity, France)"
+  ],
+  "Faculty of Engineering": [
+    "B.Tech.",
+    "B.Tech. Lateral Entry",
+    "M.Tech."
+  ],
+  "TMIMT College of Physical Education": [
+    "BPES (Hons)",
+    "B.P.Ed.",
+    "M.P.Ed."
+  ],
+  "College of Law & Legal Studies": [
+    "B.A.-LL.B. (Hons.)",
+    "B.B.A.-LL.B. (Hons.)",
+    "B.Com. LL.B. (Hons.)",
+    "LL.M."
+  ],
+  "Faculty of Education": [
+    "B.Ed.",
+    "M.Ed.",
+    "D.El.Ed. (BTC)",
+    "ITEP",
+    "B.El.Ed."
+  ],
+  "Faculty of Humanities & Social Sciences": [
+    "B.A.",
+    "B.Sc. (ZBC/PCM)",
+    "B.A. (Hons)",
+    "B.LIS",
+    "M.LIS"
+  ],
+  "College of Agriculture Sciences": [
+    "B.Sc. (Hons) Agriculture",
+    "M.Sc. Agriculture"
+  ],
+  "College of Fine Arts": [
+    "BFA (Hons)",
+    "M.F.A."
+  ],
+  "Doctoral Programmes (Ph.D)": [
+    "Ph.D."
+  ]
 };
 
 /* Specializations per programme — kept under the old name (BRANCH_MAP) so
    every existing function that reads it (updateBranches, updateAdminBranches,
    updateCourseBranches, etc.) keeps working unchanged. */
-const BRANCH_MAP = {"MBBS": ["Medical"], "MD": ["Radio-Diagnosis/ Radiology", "Dermatology, Venereology & Leprosy", "General Medicine", "Pediatrics", "Respiratory Medicine / TB & Chest", "Psychiatry", "Anaesthesiology", "Pathology", "Biochemistry", "Microbiology", "Community Medicine", "Pharmacology", "Anatomy", "Physiology", "Forensic Medicine"], "MS": ["ENT / Oto-Rhinolaryngology", "General Surgery", "Ophthalmology", "Orthopaedics", "Obstetrics & Gynecology"], "B.Sc.": ["Medical (Anatomy, Physiology, Biochemistry, Pharmacology)", "Radiological Imaging Techniques", "Medical Lab Techniques", "ZBC / PCM"], "M.Sc.": ["Medical (Anatomy, Physiology, Biochemistry, Microbiology, Pharmacology)", "Medical Lab Techniques", "Optometry", "Forensic Science", "Artificial Intelligence / Data Science (with Aivancity, France)"], "BDS": ["Bachelor of Dental Surgery"], "MDS": ["Conservative Dentistry & Endodontics", "Oral & Maxillofacial Surgery", "Orthodontics & Dentofacial Orthopedics", "Prosthodontics and Crown & Bridge", "Paedodontics & Preventive Dentistry", "Periodontology", "Public Health Dentistry", "Oral Medicine & Radiology", "Oral Pathology & Microbiology"], "ANM": ["Auxiliary Nursing & Midwifery"], "B.Sc. Nursing": ["Nursing"], "Post Basic B.Sc. Nursing": ["Nursing"], "M.Sc. Nursing": ["Medical Surgical Nursing", "Child Health (Paediatric) Nursing", "Obstetrics & Gynecology Nursing", "Community Health Nursing", "Mental Health (Psychiatric) Nursing"], "Diploma": ["Laboratory Technician", "Blood Transfusion", "C.T. Scan Technician", "Emergency & Trauma Care", "Cardiology Technician", "Dialysis Technician", "M.R.I. Technician", "O.T. Technician", "Anaesthesia and Critical Care Technician", "Orthopaedic and Plaster Technician", "Audio and Speech Therapy Technician", "Neonatal Care Technician", "Intervention Radiology", "X-Ray Technician", "Optometry"], "B.Sc. (Hons)": ["Forensic Science"], "B.OPTM": ["Optometry"], "B.Sc. (NEP)": ["Radiological Imaging Techniques"], "BPT": ["Bachelor of Physiotherapy"], "MPT": ["Orthopaedics", "Neurosciences", "Cardiopulmonary", "Sports", "Paediatrics", "Gynaecology & Obstetrics"], "D.Pharm.": ["Pharmacy"], "B.Pharm.": ["Pharmacy", "Lateral Entry"], "Pharm.D.": ["Doctor of Pharmacy", "Post Baccalaureate"], "M.Pharm.": ["Pharmacology", "Pharmaceutics", "Pharmacognosy", "Pharmaceutical Analysis"], "B.Com. (Hons)": ["Finance", "Digital Marketing", "Fintech & Blockchain Technology", "Business Analytics", "Economics Accounting & Tax Laws"], "BBA (Hons)": ["International Business and Entrepreneurship", "Data Analytics", "Finance", "Human Resource Management", "Marketing Management", "Digital Marketing", "Fintech & Blockchain Technology", "Business Analytics", "Economics Accounting & Tax Laws"], "MBA": ["Marketing", "HR", "IB", "Finance", "Agri. Business", "Logistics and Supply Chain Management", "Data Analytics", "Corporate with Global Exposure", "Hospital Management"], "B.Tech. (CSE)": ["Computer Science & Engineering", "Artificial Intelligence Machine Learning & Deep Learning", "Cloud Technology & Information Security", "Data Science", "Cyber Security", "Application Development using Cloud & Analytics Platform (IBM)"], "B.Tech. (CSE) Lateral Entry": ["Computer Science & Engineering", "Artificial Intelligence Machine Learning & Deep Learning", "Data Science", "Cyber Security"], "M.Tech. (CSE)": ["AI & ML", "Data Analytics", "Cloud Computing", "Information Security"], "BCA (Hons)": ["Artificial Intelligence", "Data Analytics", "Cyber Security", "Full Stack Web Applications", "Software Engineering & Quality Testing", "Cloud Computing and IoT", "Digital Marketing", "Cloud Technology & Information Security", "Mobile Application & Web Technology"], "MCA": ["Software Development", "Machine Learning", "Network Technologies", "Data Science & Analytics", "Advance Technologies"], "B.Sc. Animation (Hons)": ["Product Designing", "UI/UX Designing", "Graphics Designing", "Game Designing", "VFX"], "B.Sc. Computer Science (Hons)": ["AI and Data Science", "Blockchain Technology", "Data Engineering", "Full Stack Development", "Cloud Technology and IoT", "Information Security", "Cognitive Science"], "B.Tech.": ["Mechanical Engineering (ME)", "Electronics & Communication Engineering (ECE)", "Civil Engineering (CE)", "Electrical Engineering (EE)"], "B.Tech. Lateral Entry": ["Mechanical Engineering (ME)", "Electronics & Communication Engineering (ECE)", "Civil Engineering (CE)", "Electrical Engineering (EE)"], "M.Tech.": ["Electrical Power & Energy System", "Additive Manufacturing", "Machine Learning & Data Sciences", "Structural and Construction Engineering"], "BPES (Hons)": ["Physical Education & Sports"], "B.P.Ed.": ["Physical Education"], "M.P.Ed.": ["Physical Education"], "B.A.-LL.B. (Hons.)": ["Law"], "B.B.A.-LL.B. (Hons.)": ["Law & Business Administration"], "B.Com. LL.B. (Hons.)": ["Law & Commerce"], "LL.M.": ["Law"], "B.Ed.": ["Education"], "M.Ed.": ["Education"], "D.El.Ed. (BTC)": ["Elementary Education"], "ITEP": ["Secondary Science"], "B.El.Ed.": ["Elementary Education"], "B.A.": ["Arts & Humanities"], "B.A. (Hons)": ["English", "Economics", "Psychology"], "B.LIS": ["Library and Information Science"], "M.LIS": ["Library and Information Science"], "B.Sc. (Hons) Agriculture": ["Agriculture Science (ICAR Accredited)"], "M.Sc. Agriculture": ["Agronomy", "Soil Science", "Plant Pathology"], "BFA (Hons)": ["Painting", "Applied Arts"], "M.F.A.": ["Fine Arts"], "Ph.D.": ["Computer Applications", "Engineering", "Education", "Management", "Law", "Physical Education", "Pharmacy", "Physiotherapy", "Allied Health Sciences", "Fine Arts", "Jainology", "Agriculture Sciences", "Medical Sciences", "Dental Sciences", "Nursing"]};
+const BRANCH_MAP = {"MBBS": ["Medical"], "MD": ["Radio-Diagnosis/ Radiology", "Dermatology, Venereology & Leprosy", "General Medicine", "Pediatrics", "Respiratory Medicine / TB & Chest", "Psychiatry", "Anaesthesiology", "Pathology", "Biochemistry", "Microbiology", "Community Medicine", "Pharmacology", "Anatomy", "Physiology", "Forensic Medicine"], "MS": ["ENT / Oto-Rhinolaryngology", "General Surgery", "Ophthalmology", "Orthopaedics", "Obstetrics & Gynecology"], "B.Sc. (Medical)": ["Medical (Anatomy, Physiology, Biochemistry, Pharmacology)"], "M.Sc. (Medical)": ["Medical (Anatomy, Physiology, Biochemistry, Microbiology, Pharmacology)"], "BDS": ["Bachelor of Dental Surgery"], "MDS": ["Conservative Dentistry & Endodontics", "Oral & Maxillofacial Surgery", "Orthodontics & Dentofacial Orthopedics", "Prosthodontics and Crown & Bridge", "Paedodontics & Preventive Dentistry", "Periodontology", "Public Health Dentistry", "Oral Medicine & Radiology", "Oral Pathology & Microbiology"], "ANM": ["Auxiliary Nursing & Midwifery"], "B.Sc. Nursing": ["Nursing"], "Post Basic B.Sc. Nursing": ["Nursing"], "M.Sc. Nursing": ["Medical Surgical Nursing", "Child Health (Paediatric) Nursing", "Obstetrics & Gynecology Nursing", "Community Health Nursing", "Mental Health (Psychiatric) Nursing"], "Diploma": ["Laboratory Technician", "Blood Transfusion", "C.T. Scan Technician", "Emergency & Trauma Care", "Cardiology Technician", "Dialysis Technician", "M.R.I. Technician", "O.T. Technician", "Anaesthesia and Critical Care Technician", "Orthopaedic and Plaster Technician", "Audio and Speech Therapy Technician", "Neonatal Care Technician", "Intervention Radiology", "X-Ray Technician", "Optometry"], "B.Sc. (Paramedical)": ["Radiological Imaging Techniques", "Medical Lab Techniques"], "B.Sc. (Hons)": ["Forensic Science"], "B.OPTM": ["Optometry"], "B.Sc. (NEP)": ["Radiological Imaging Techniques"], "M.Sc. (Paramedical)": ["Medical Lab Techniques", "Optometry", "Forensic Science"], "BPT": ["Bachelor of Physiotherapy"], "MPT": ["Orthopaedics", "Neurosciences", "Cardiopulmonary", "Sports", "Paediatrics", "Gynaecology & Obstetrics"], "D.Pharm.": ["Pharmacy"], "B.Pharm.": ["Pharmacy", "Lateral Entry"], "Pharm.D.": ["Doctor of Pharmacy", "Post Baccalaureate"], "M.Pharm.": ["Pharmacology", "Pharmaceutics", "Pharmacognosy", "Pharmaceutical Analysis"], "B.Com. (Hons)": ["Finance", "Digital Marketing", "Fintech & Blockchain Technology", "Business Analytics", "Economics Accounting & Tax Laws"], "BBA (Hons)": ["International Business and Entrepreneurship", "Data Analytics", "Finance", "Human Resource Management", "Marketing Management", "Digital Marketing", "Fintech & Blockchain Technology", "Business Analytics", "Economics Accounting & Tax Laws"], "MBA": ["Marketing", "HR", "IB", "Finance", "Agri. Business", "Logistics and Supply Chain Management", "Data Analytics", "Corporate with Global Exposure", "Hospital Management"], "B.Tech. (CSE)": ["Computer Science & Engineering", "Artificial Intelligence Machine Learning & Deep Learning", "Cloud Technology & Information Security", "Data Science", "Cyber Security", "Application Development using Cloud & Analytics Platform (IBM)"], "B.Tech. (CSE) Lateral Entry": ["Computer Science & Engineering", "Artificial Intelligence Machine Learning & Deep Learning", "Data Science", "Cyber Security"], "M.Tech. (CSE)": ["AI & ML", "Data Analytics", "Cloud Computing", "Information Security"], "BCA (Hons)": ["Artificial Intelligence", "Data Analytics", "Cyber Security", "Full Stack Web Applications", "Software Engineering & Quality Testing", "Cloud Computing and IoT", "Digital Marketing", "Cloud Technology & Information Security", "Mobile Application & Web Technology"], "MCA": ["Software Development", "Machine Learning", "Network Technologies", "Data Science & Analytics", "Advance Technologies"], "B.Sc. Animation (Hons)": ["Product Designing", "UI/UX Designing", "Graphics Designing", "Game Designing", "VFX"], "B.Sc. Computer Science (Hons)": ["AI and Data Science", "Blockchain Technology", "Data Engineering", "Full Stack Development", "Cloud Technology and IoT", "Information Security", "Cognitive Science"], "M.Sc. (with Aivancity, France)": ["Artificial Intelligence / Data Science (with Aivancity, France)"], "B.Tech.": ["Mechanical Engineering (ME)", "Electronics & Communication Engineering (ECE)", "Civil Engineering (CE)", "Electrical Engineering (EE)"], "B.Tech. Lateral Entry": ["Mechanical Engineering (ME)", "Electronics & Communication Engineering (ECE)", "Civil Engineering (CE)", "Electrical Engineering (EE)"], "M.Tech.": ["Electrical Power & Energy System", "Additive Manufacturing", "Machine Learning & Data Sciences", "Structural and Construction Engineering"], "BPES (Hons)": ["Physical Education & Sports"], "B.P.Ed.": ["Physical Education"], "M.P.Ed.": ["Physical Education"], "B.A.-LL.B. (Hons.)": ["Law"], "B.B.A.-LL.B. (Hons.)": ["Law & Business Administration"], "B.Com. LL.B. (Hons.)": ["Law & Commerce"], "LL.M.": ["Law"], "B.Ed.": ["Education"], "M.Ed.": ["Education"], "D.El.Ed. (BTC)": ["Elementary Education"], "ITEP": ["Secondary Science"], "B.El.Ed.": ["Elementary Education"], "B.A.": ["Arts & Humanities"], "B.Sc. (ZBC/PCM)": ["ZBC / PCM"], "B.A. (Hons)": ["English", "Economics", "Psychology"], "B.LIS": ["Library and Information Science"], "M.LIS": ["Library and Information Science"], "B.Sc. (Hons) Agriculture": ["Agriculture Science (ICAR Accredited)"], "M.Sc. Agriculture": ["Agronomy", "Soil Science", "Plant Pathology"], "BFA (Hons)": ["Painting", "Applied Arts"], "M.F.A.": ["Fine Arts"], "Ph.D.": ["Computer Applications", "Engineering", "Education", "Management", "Law", "Physical Education", "Pharmacy", "Physiotherapy", "Allied Health Sciences", "Fine Arts", "Jainology", "Agriculture Sciences", "Medical Sciences", "Dental Sciences", "Nursing"]};
+
+/* Programme duration, straight from the official sheet's YEARS column —
+   e.g. PROGRAMME_YEARS["B.Tech. (CSE)"] === "4 yrs." */
+const PROGRAMME_YEARS = {"MBBS": "4.5+1 yr. Internship", "MD": "3 yrs.", "MS": "3 yrs.", "B.Sc. (Medical)": "3 yrs.", "M.Sc. (Medical)": "3 yrs.", "BDS": "4+1 yr. Internship", "MDS": "3 yrs.", "ANM": "2 yrs.", "B.Sc. Nursing": "4 yrs.", "Post Basic B.Sc. Nursing": "2 yrs.", "M.Sc. Nursing": "2 yrs.", "Diploma": "2 yrs.", "B.Sc. (Paramedical)": "3.5 yrs.", "B.Sc. (Hons)": "4 yrs.", "B.OPTM": "4 yrs.", "B.Sc. (NEP)": "4 yrs.", "M.Sc. (Paramedical)": "2 yrs.", "BPT": "4.5 yrs.", "MPT": "2 yrs.", "D.Pharm.": "2 yrs.", "B.Pharm.": "3 yrs.", "Pharm.D.": "3 yrs.", "M.Pharm.": "2 yrs.", "B.Com. (Hons)": "4 yrs.", "BBA (Hons)": "4 yrs.", "MBA": "2 yrs.", "B.Tech. (CSE)": "4 yrs.", "B.Tech. (CSE) Lateral Entry": "3 yrs.", "M.Tech. (CSE)": "2 yrs.", "BCA (Hons)": "4 yrs.", "MCA": "2 yrs.", "B.Sc. Animation (Hons)": "4 yrs.", "B.Sc. Computer Science (Hons)": "4 yrs.", "M.Sc. (with Aivancity, France)": "1+1 yrs.", "B.Tech.": "4 yrs.", "B.Tech. Lateral Entry": "3 yrs.", "M.Tech.": "2 yrs.", "BPES (Hons)": "4 yrs.", "B.P.Ed.": "2 yrs.", "M.P.Ed.": "2 yrs.", "B.A.-LL.B. (Hons.)": "5 yrs.", "B.B.A.-LL.B. (Hons.)": "5 yrs.", "B.Com. LL.B. (Hons.)": "5 yrs.", "LL.M.": "1 yr.", "B.Ed.": "2 yrs.", "M.Ed.": "2 yrs.", "D.El.Ed. (BTC)": "2 yrs.", "ITEP": "4 yrs.", "B.El.Ed.": "4 yrs.", "B.A.": "3 yrs.", "B.Sc. (ZBC/PCM)": "3 yrs.", "B.A. (Hons)": "4 yrs.", "B.LIS": "1 yr.", "M.LIS": "1 yr.", "B.Sc. (Hons) Agriculture": "4 yrs.", "M.Sc. Agriculture": "2 yrs.", "BFA (Hons)": "4 yrs.", "M.F.A.": "2 yrs.", "Ph.D.": "Min. 3 yrs."};
 
 /* Reusable 3-level cascade: College select → Programme select → Specialization select.
    collegeId/courseId must exist in the DOM; branchId is optional (some forms
