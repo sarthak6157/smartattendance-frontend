@@ -956,27 +956,22 @@ button, input, select, textarea { font-family: inherit; }
      <div style="background:#f0f7ff;border-radius:10px;padding:14px;margin-bottom:14px;border:1.5px solid #dbeafe;">
        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
          <div style="font-size:.78rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;"><i class="fa-solid fa-graduation-cap"></i> Academic Details</div>
-         <span style="font-size:.73rem;color:var(--muted);font-weight:400;">(Course required — rest optional)</span>
+         <span style="font-size:.73rem;color:var(--muted);font-weight:400;">(optional — can fill later)</span>
+       </div>
+
+       <!-- College -->
+       <div class="form-group">
+         <label class="form-label">College</label>
+         <select class="form-control form-select" id="regCollege">
+           <option value="">— Select College (optional) —</option>
+         </select>
        </div>
 
        <!-- Course -->
        <div class="form-group">
-         <label class="form-label">Course / Program *</label>
-         <select class="form-control form-select" id="regCourse" onchange="updateBranches()">
-           <option value="">— Select Course —</option>
-           <option value="B.Tech">B.Tech (Bachelor of Technology)</option>
-           <option value="B.E">B.E (Bachelor of Engineering)</option>
-           <option value="BCA">BCA (Bachelor of Computer Applications)</option>
-           <option value="MCA">MCA (Master of Computer Applications)</option>
-           <option value="MBA">MBA (Master of Business Administration)</option>
-           <option value="B.Pharma">B.Pharma (Bachelor of Pharmacy)</option>
-           <option value="M.Tech">M.Tech (Master of Technology)</option>
-           <option value="B.Sc">B.Sc (Bachelor of Science)</option>
-           <option value="M.Sc">M.Sc (Master of Science)</option>
-           <option value="BBA">BBA (Bachelor of Business Administration)</option>
-           <option value="B.Com">B.Com (Bachelor of Commerce)</option>
-           <option value="LLB">LLB (Bachelor of Laws)</option>
-           <option value="MBBS">MBBS (Bachelor of Medicine)</option>
+         <label class="form-label">Course / Program</label>
+         <select class="form-control form-select" id="regCourse" onchange="updateBranches()" disabled>
+           <option value="">— Select College first —</option>
          </select>
        </div>
 
@@ -1194,20 +1189,15 @@ button, input, select, textarea { font-family: inherit; }
       <div style="background:#f0f7ff;border-radius:8px;padding:12px;margin-bottom:10px;border:1px solid #dbeafe;">
         <div style="font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;"><i class="fa-solid fa-graduation-cap"></i> Academic Details</div>
         <div class="form-group">
+          <label class="form-label">College *</label>
+          <select class="form-control form-select" id="mu_college">
+            <option value="">— Select College —</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label class="form-label">Course / Program *</label>
-          <select class="form-control form-select" id="mu_course" onchange="updateAdminBranches()">
-            <option value="">— Select Course —</option>
-            <option value="B.Tech">B.Tech (Bachelor of Technology)</option>
-            <option value="B.E">B.E (Bachelor of Engineering)</option>
-            <option value="BCA">BCA (Bachelor of Computer Applications)</option>
-            <option value="MCA">MCA (Master of Computer Applications)</option>
-            <option value="MBA">MBA (Master of Business Administration)</option>
-            <option value="B.Pharma">B.Pharma (Bachelor of Pharmacy)</option>
-            <option value="M.Tech">M.Tech (Master of Technology)</option>
-            <option value="B.Sc">B.Sc (Bachelor of Science)</option>
-            <option value="BBA">BBA (Bachelor of Business Administration)</option>
-            <option value="LLB">LLB (Bachelor of Laws)</option>
-            <option value="MBBS">MBBS</option>
+          <select class="form-control form-select" id="mu_course" onchange="updateAdminBranches()" disabled>
+            <option value="">— Select College first —</option>
           </select>
         </div>
         <div class="form-group" id="mu_branch_group" style="display:none;">
@@ -1326,23 +1316,16 @@ button, input, select, textarea { font-family: inherit; }
       <div class="form-group"><label class="form-label">Course Code *</label><input class="form-control" id="mc_code" placeholder="e.g. CS301"></div>
       <div class="form-group"><label class="form-label">Course / Subject Name *</label><input class="form-control" id="mc_name" placeholder="e.g. Data Structures"></div>
     </div>
-    <div class="form-group" style="background:#fff8e6;border:1px solid #f5deab;border-radius:8px;padding:10px 12px;">
-      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:.85rem;">
-        <input type="checkbox" id="mc_is_free" onchange="toggleFreeCourseMode()" style="margin-top:3px;">
-        <span><strong>Common / Free period</strong> — e.g. Digital Library, Coding Practice, Mentor Interaction.
-        Applies to <strong>all branches</strong>, no College/Program needed.</span>
-      </label>
-    </div>
     <!-- College / Program type -->
-    <div class="form-row" id="mc_college_prog_row">
+    <div class="form-row">
       <div class="form-group">
-        <label class="form-label" id="mc_college_label">College *</label>
+        <label class="form-label">College *</label>
         <select class="form-control form-select" id="mc_college">
           <option value="">— Select College —</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label" id="mc_program_label">Program *</label>
+        <label class="form-label">Program *</label>
         <select class="form-control form-select" id="mc_program" onchange="updateCourseBranches()" disabled>
           <option value="">— Select College first —</option>
         </select>
@@ -1426,18 +1409,28 @@ button, input, select, textarea { font-family: inherit; }
       <label class="form-label">Class Title *</label>
       <input class="form-control" id="ec_title" placeholder="e.g. Extra Lecture — Unit 4 Revision">
     </div>
+    <div class="form-group">
+      <label class="form-label">College <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
+      <select class="form-control form-select" id="ec_college">
+        <option value="">— Select College (optional) —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Course / Program <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
+      <select class="form-control form-select" id="ec_course_prog" onchange="updateEcBranches()" disabled>
+        <option value="">— Select College first —</option>
+      </select>
+    </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Branch <small style="color:var(--muted);font-weight:400;">(for student filter)</small></label>
-        <select class="form-control form-select" id="ec_branch" onchange="onEcBranchChange()">
-          <option value="">— All branches —</option>
+        <label class="form-label">Branch / Specialization</label>
+        <select class="form-control form-select" id="ec_branch">
+          <option value="">— Select branch (optional) —</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">Section <small style="color:var(--muted);font-weight:400;">(optional)</small></label>
-        <select class="form-control form-select" id="ec_section">
-          <option value="">— All sections —</option>
-        </select>
+        <input class="form-control" id="ec_section" placeholder="e.g. A" maxlength="10">
       </div>
     </div>
     <div class="form-row">
@@ -1515,7 +1508,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (window.innerWidth <= 768) closeSidebar();
     });
   });
+  setupCollegeCascade('regCollege', 'regCourse', 'regBranch');
+  setupCollegeCascade('mu_college', 'mu_course', 'mu_branch');
   setupCollegeCascade('mc_college', 'mc_program', 'mc_branch_sel');
+  setupCollegeCascade('ec_college', 'ec_course_prog', 'ec_branch');
 });
 
 /* ========== LOADING OVERLAY ================== */
@@ -2130,8 +2126,9 @@ async function doRegister() {
   if (!name)   { toast('Please enter your full name','warning'); return; }
   if (!enroll) { toast('Please enter your enrollment number','warning'); return; }
   if (!email)  { toast('Please enter your email','warning'); return; }
-  if (!course) { toast('Please select your Course / Program','warning'); return; }
-  // Branch/Section/Semester remain optional
+  if (!pass)   { toast('Please set a password','warning'); return; }
+  // Academic fields are all optional - no mandatory check
+  // section and semester are optional
   if (!pass)    { toast('Please set a password','warning'); return; }
   if (pass !== pass2) { toast('Passwords do not match','error'); return; }
   if (pass.length < 6){ toast('Password must be at least 6 characters','warning'); return; }
@@ -2674,6 +2671,14 @@ function buildBranchOptions(course, selectId) {
     '<option value="">All branches (no filter)</option>';
 }
 
+function updateEcBranches() {
+  const course = document.getElementById('ec_course_prog')?.value || '';
+  const brSel  = document.getElementById('ec_branch');
+  if (!brSel) return;
+  if (!course) { brSel.innerHTML = '<option value="">- Select course first -</option>'; return; }
+  buildBranchOptions(course, 'ec_branch');
+}
+
 function updateSlBranches() {
   const course = document.getElementById('sl_course_prog')?.value || '';
   const brSel  = document.getElementById('sl_branch');
@@ -2684,25 +2689,6 @@ function updateSlBranches() {
 
 function getEcBranch() {
   return (document.getElementById('ec_branch')?.value || '').trim();
-}
-
-// When a branch is picked, narrow the Section dropdown to sections that
-// actually exist for real students in that branch (avoids typing a section
-// nobody is in, which would make the session invisible to everyone).
-async function onEcBranchChange() {
-  const branch = getEcBranch();
-  const secEl  = document.getElementById('ec_section');
-  if (!secEl) return;
-  if (!branch) { secEl.innerHTML = '<option value="">— All sections —</option>'; return; }
-  secEl.innerHTML = '<option value="">Loading...</option>';
-  try {
-    const data = await API.get(`/users?role=student&branch=${encodeURIComponent(branch)}&limit=500`);
-    const sections = [...new Set((data.users || []).map(u => u.section).filter(Boolean))].sort();
-    secEl.innerHTML = '<option value="">— All sections —</option>' +
-      sections.map(s => `<option value="${s}">${s}</option>`).join('');
-  } catch (e) {
-    secEl.innerHTML = '<option value="">— All sections —</option>';
-  }
 }
 
 function getSlBranch() {
@@ -2981,13 +2967,6 @@ function openAddCourseModal() {
         <label class="form-label">Subject Name *</label>
         <input class="form-control" id="sc_name" placeholder="e.g. Engineering Mathematics-II">
       </div>
-      <div class="form-group" style="background:#fff8e6;border:1px solid #f5deab;border-radius:8px;padding:10px 12px;">
-        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:.85rem;">
-          <input type="checkbox" id="sc_is_free" onchange="document.getElementById('sc_credits').value = this.checked ? 0 : 3;">
-          <span><strong>Free period — no teacher needed</strong> (e.g. Digital Library, Coding Practice, Mentor Interaction).
-          Sets credits to 0 so it doesn't require a teacher when scheduled.</span>
-        </label>
-      </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Type</label>
@@ -3118,21 +3097,6 @@ async function deleteCourse(id, name) {
 
 
 /* Course modal - branch/section helpers */
-function toggleFreeCourseMode() {
-  const isFree = document.getElementById('mc_is_free').checked;
-  const row    = document.getElementById('mc_college_prog_row');
-  const brGrp  = document.getElementById('mc_branch_group');
-  const ssGrp  = document.getElementById('mc_sec_sem_group');
-  if (row) row.style.display = isFree ? 'none' : 'flex';
-  if (isFree) {
-    if (brGrp) brGrp.style.display = 'none';
-    if (ssGrp) ssGrp.style.display = 'none';
-  } else {
-    // Restore normal cascade state based on whatever program is selected
-    updateCourseBranches();
-  }
-}
-
 function updateCourseBranches() {
   const prog = document.getElementById('mc_program').value;
   const brGrp = document.getElementById('mc_branch_group');
@@ -3166,15 +3130,14 @@ function getCourseBranch() {
 async function saveNewCourse() {
   const code    = document.getElementById('mc_code').value.trim().toUpperCase();
   const name    = document.getElementById('mc_name').value.trim();
-  const isFree  = document.getElementById('mc_is_free')?.checked;
-  const prog    = isFree ? '' : document.getElementById('mc_program').value;
-  const branch  = isFree ? '' : getCourseBranch();
-  const section = isFree ? '' : (document.getElementById('mc_section')?.value || '');
-  const semester= isFree ? '' : (document.getElementById('mc_semester')?.value || '');
+  const prog    = document.getElementById('mc_program').value;
+  const branch  = getCourseBranch();
+  const section = document.getElementById('mc_section')?.value || '';
+  const semester= document.getElementById('mc_semester')?.value || '';
   const mcCreditsRaw = document.getElementById('mc_credits').value;
   const credits = mcCreditsRaw === '' ? 3 : (parseInt(mcCreditsRaw) || 0);
   if (!code||!name) { toast('Code and name are required','warning'); return; }
-  if (!isFree && !prog) { toast('Please select a program, or tick "Common / Free period"','warning'); return; }
+  if (!prog)        { toast('Please select a program','warning'); return; }
   const fullBranch = branch ? `${prog} - ${branch}` : prog;
   const dept = fullBranch;
   try {
@@ -3183,7 +3146,7 @@ async function saveNewCourse() {
     closeModal('addCourseModal');
     toast(`Course "${name}" added!`,'success');
     // Also add branch to BRANCH_MAP if new
-    if (!isFree && branch && typeof BRANCH_MAP !== 'undefined' && BRANCH_MAP[prog]) {
+    if (branch && typeof BRANCH_MAP !== 'undefined' && BRANCH_MAP[prog]) {
       if (!BRANCH_MAP[prog].includes(branch)) BRANCH_MAP[prog].push(branch);
     }
     await renderCourses(document.getElementById('adminContent'));
@@ -3203,50 +3166,6 @@ async function deleteCourse(id, name) {
    TIMETABLE - Admin creates slots, faculty goes live
 ============================================================== */
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-
-// One-click setup: ensure a "Mentor Interaction" course exists (credits=0,
-// so it never requires a teacher) and that every day has a 9:10-9:25 slot
-// for it with no branch/section set — a blank branch/section already
-// matches every student and every faculty's timetable view, so this single
-// set of slots automatically shows up for everyone without per-branch setup.
-async function quickSetupMentorPeriod() {
-  if (!confirm('This will create (if missing) a daily 9:10–9:25 "Mentor Interaction" period for ALL branches and sections. Continue?')) return;
-  try {
-    const courses = await API.get('/courses').catch(()=>[]);
-    let mentorCourse = (Array.isArray(courses) ? courses : [])
-      .find(co => (co.name||'').toLowerCase().trim() === 'mentor interaction' || (co.code||'').toUpperCase() === 'MENTOR');
-
-    if (!mentorCourse) {
-      mentorCourse = await API.post('/courses', {
-        code: 'MENTOR', name: 'Mentor Interaction', credits: 0, course_type: 'activity',
-      });
-    }
-
-    const allSlots = await API.get('/timetable').catch(()=>[]);
-    const existingDays = new Set(
-      (Array.isArray(allSlots) ? allSlots : [])
-        .filter(s => s.course_id === mentorCourse.id && s.start_time === '09:10' && !s.branch && !s.section)
-        .map(s => (s.day_of_week||'').toLowerCase())
-    );
-
-    let created = 0;
-    for (const day of ['monday','tuesday','wednesday','thursday','friday','saturday']) {
-      if (existingDays.has(day)) continue;
-      await API.post('/timetable', {
-        course_id: mentorCourse.id, faculty_id: null,
-        day_of_week: day, start_time: '09:10', end_time: '09:25',
-        room: null, branch: null, section: null, sub_section: null,
-        semester: null, course_type: 'activity',
-      });
-      created++;
-    }
-
-    toast(created ? `Mentor Interaction set up for ${created} day(s)!` : 'Mentor Interaction was already set up for every day.', 'success');
-    await renderTimetable(document.getElementById('adminContent'));
-  } catch (e) {
-    toast(e.message || 'Failed to set up Mentor Interaction', 'error');
-  }
-}
 
 async function renderTimetable(c) {
   // Load branches/sections from students for dropdowns
@@ -3280,9 +3199,6 @@ async function renderTimetable(c) {
         <input type="file" id="ttBulkInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="bulkImportTimetable(this)">
         <button class="btn btn-success btn-sm" onclick="openCopyTimetableModal()">
           <i class="fa-solid fa-copy"></i> Copy to Section
-        </button>
-        <button class="btn btn-outline btn-sm" onclick="quickSetupMentorPeriod()">
-          <i class="fa-solid fa-user-group"></i> Setup Mentor Interaction (9:10–9:25, all branches)
         </button>
       </div>
     </div>
@@ -3560,22 +3476,6 @@ function syncSearchableSelect(selectId) {
   select._searchableInput.value = opt ? opt.textContent : '';
 }
 
-// A course counts as a "free period" (no teacher required) if its code is
-// one of the known free-activity codes, its credits are 0 (the same signal
-// the backend uses), or its name plainly says so — covers courses named
-// "Digital Library" / "Coding Practice" / "Mentor Interaction" whose code
-// isn't literally LIBRARY/CODING/MENTOR.
-function isFreeCourseOption(opt) {
-  if (!opt) return false;
-  const FREE_CODES = ['LIBRARY','TINKERER','MENTOR','CODING','FREE'];
-  const code = opt.text.split(' - ')[0].trim().toUpperCase();
-  const text = opt.text.toLowerCase();
-  const credits = parseInt(opt.dataset.credits);
-  return FREE_CODES.includes(code)
-    || (!isNaN(credits) && credits === 0)
-    || ['library','tinkerer','mentor','coding','free period','activity'].some(w => text.includes(w));
-}
-
 async function openSlotEditor(day, startTime, endTime, slotId, branch, section, semester) {
   const ex = document.getElementById('slotEditorModal'); if (ex) ex.remove();
 
@@ -3617,9 +3517,9 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
         </label>
         <select class="form-control form-select" id="se_course">
           <option value="">-- Select Subject --</option>
-          ${semCourses.map(co=>`<option value="${co.id}" data-type="${co.course_type||'theory'}" data-credits="${co.credits ?? 3}">${co.code} - ${co.name}</option>`).join('')}
+          ${semCourses.map(co=>`<option value="${co.id}" data-type="${co.course_type||'theory'}">${co.code} - ${co.name}</option>`).join('')}
           <optgroup label="-- All Subjects --">
-            ${Object.values(bySem).flat().filter(co=>!semCourses.find(s=>s.id===co.id)).map(co=>`<option value="${co.id}" data-type="${co.course_type||'theory'}" data-credits="${co.credits ?? 3}">${co.code} - ${co.name}</option>`).join('')}
+            ${Object.values(bySem).flat().filter(co=>!semCourses.find(s=>s.id===co.id)).map(co=>`<option value="${co.id}" data-type="${co.course_type||'theory'}">${co.code} - ${co.name}</option>`).join('')}
           </optgroup>
         </select>
       </div>
@@ -3665,10 +3565,13 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
   modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
 
   // Auto-set type when course selected + hide teacher for free classes
+  const FREE_CODES = ['LIBRARY','TINKERER','MENTOR','CODING','FREE'];
   document.getElementById('se_course').addEventListener('change', function() {
     const opt  = this.options[this.selectedIndex];
     const type = opt.dataset.type || 'theory';
-    const isFree = isFreeCourseOption(opt);
+    const code = opt.text.split(' - ')[0].trim().toUpperCase();
+    const isFree = FREE_CODES.includes(code) || opt.text.toLowerCase().includes('library')
+      || opt.text.toLowerCase().includes('tinkerer') || opt.text.toLowerCase().includes('mentor');
 
     // Toggle teacher field
     const facGroup = document.getElementById('se_faculty_group');
@@ -3701,8 +3604,10 @@ async function saveSlotFromEditor(slotId, day, startTime, endTime, branch, secti
   if (!courseId) { toast('Please select a subject', 'warning'); return; }
 
   // Check if free class — teacher not required
+  const FREE_CODES = ['LIBRARY','TINKERER','MENTOR','CODING','FREE'];
   const selOpt = document.getElementById('se_course').options[document.getElementById('se_course').selectedIndex];
-  const isFree = isFreeCourseOption(selOpt);
+  const selCode = selOpt ? selOpt.text.split(' - ')[0].trim().toUpperCase() : '';
+  const isFree  = FREE_CODES.includes(selCode);
 
   if (!facultyId && !isFree) {
     toast('Please select a teacher for this class', 'warning'); return;
@@ -4190,6 +4095,23 @@ async function facNav(section) {
   if (renders[section]) await renders[section](c);
 }
 
+async function claimMentorSlot() {
+  if (!confirm('Set up a 9:10-9:25 "Mentor Interaction" period every weekday for the section(s) you teach? This assigns it to you.')) return;
+  try {
+    const res = await API.post('/timetable/claim-mentor-slot', {});
+    const claimed = res.claimed_sections || [];
+    const skipped = res.skipped_sections || [];
+    let msg = claimed.length
+      ? `Mentor Interaction set up for: ${claimed.join(', ')}`
+      : 'Nothing new to set up.';
+    if (skipped.length) msg += ` (already claimed by another faculty for: ${skipped.join(', ')})`;
+    toast(msg, claimed.length ? 'success' : 'warning');
+    await facNav('dashboard');
+  } catch (e) {
+    toast(e.message || 'Failed to set up Mentor Interaction', 'error');
+  }
+}
+
 async function renderFacDashboard(c) {
   const [slots, sessData, sett] = await Promise.all([
     API.get('/timetable').catch(()=>[]),
@@ -4317,6 +4239,14 @@ async function renderFacDashboard(c) {
       <i class="fa-solid fa-circle-plus" style="font-size:1.1rem;"></i>
       Add Extra / One-Time Class
       <span style="font-size:.78rem;font-weight:400;color:#5a9e70;margin-left:4px;">Goes live immediately with QR</span>
+    </button>
+  </div>
+
+  <!-- Set Mentor Interaction Quick Button -->
+  <div style="margin-bottom:16px;">
+    <button onclick="claimMentorSlot()" style="width:100%;background:var(--card);border:1.5px solid var(--border);color:var(--text);border-radius:12px;padding:12px 18px;font-size:.88rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:inherit;">
+      <i class="fa-solid fa-user-group" style="color:var(--accent);"></i>
+      Set Mentor Interaction (9:10-9:25) for my section
     </button>
   </div>
 
@@ -4611,25 +4541,10 @@ async function openExtraClassModal() {
 
   // Pre-fill branch/section from faculty's own timetable context if available
   document.getElementById('ec_title').value    = '';
-
-  // Branch/Section options are pulled straight from real student records
-  // (same source as the working Manage Users filters) so the value we send
-  // to the backend always exactly matches what's stored on the students —
-  // picking from a College/Programme list produced a differently-formatted
-  // string that silently failed to match, hiding the session from students.
-  const brEl  = document.getElementById('ec_branch');
-  const secEl = document.getElementById('ec_section');
-  if (brEl)  brEl.innerHTML  = '<option value="">Loading branches...</option>';
-  if (secEl) secEl.innerHTML = '<option value="">— All sections —</option>';
-  try {
-    const opts = await API.get('/users/filter-options');
-    if (brEl) {
-      brEl.innerHTML = '<option value="">— All branches —</option>' +
-        (opts.branches || []).map(b => `<option value="${b}">${b}</option>`).join('');
-    }
-  } catch (e) {
-    if (brEl) brEl.innerHTML = '<option value="">— All branches —</option>';
-  }
+  const cpEl = document.getElementById('ec_course_prog');
+  if (cpEl) { cpEl.value = ''; }
+  const brEl = document.getElementById('ec_branch');
+  if (brEl) brEl.innerHTML = '<option value="">- Select course first -</option>';
   document.getElementById('ec_location').value = '';
   document.getElementById('ec_grace').value    = '15';
 
