@@ -1670,8 +1670,8 @@ async function renderDefaulters(c) {
               <thead><tr><th>Rank</th><th>Name</th><th>Enrollment</th><th>Branch</th><th>Section</th><th>Present</th><th>Absent</th><th>Attendance</th></tr></thead>
               <tbody>${defaulters.map((s,i) => `<tr>
                 <td style="font-weight:700;color:var(--accent2);">#${i+1}</td>
-                <td><strong>${s.full_name}</strong></td>
-                <td><code>${s.inst_id}</code></td>
+                <td><strong>${escHtml(s.full_name)}</strong></td>
+                <td><code>${escHtml(s.inst_id)}</code></td>
                 <td style="font-size:.8rem;">${s.branch||s.department||'-'}</td>
                 <td>${s.section||'-'}</td>
                 <td style="color:var(--success);">${s.present}</td>
@@ -1838,6 +1838,46 @@ let cachedCourses = [];
 let cachedSettings = {};
 
 /* =========================== UTILS =========================== */
+/* ── XSS-safety helpers ───────────────────────────────────────────────
+   All user-supplied free text (full_name, email, notes, branch, course,
+   session/course titles, etc.) gets rendered back into the DOM via
+   innerHTML template literals throughout this app. Without escaping, a
+   malicious value (e.g. a registration full_name containing HTML/JS)
+   would execute in the browser of any admin/faculty who later views
+   that record — a classic stored-XSS token-theft vector, since the auth
+   token lives in localStorage and is readable by any script running on
+   this page.
+   - escHtml(): use for plain HTML text content, e.g. <td>${escHtml(x)}</td>
+   - escJs(): use for values embedded as a quoted JS string INSIDE an
+     onclick="...('${...}')" attribute. HTML-entity-escaping alone is
+     NOT enough there — the browser HTML-decodes attribute values before
+     treating them as JS, so an entity-encoded quote (&#39;) still turns
+     back into a literal ' and breaks out of the JS string. escJs()
+     backslash-escapes the quote so it survives decoding as an escaped
+     JS character, and also HTML-escapes & " < > so the value can't
+     break out of the surrounding HTML attribute either. */
+function escHtml(v) {
+  if (v === null || v === undefined) return '';
+  return String(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function escJs(v) {
+  if (v === null || v === undefined) return '';
+  return String(v)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '');
+}
+
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -2315,7 +2355,7 @@ async function renderAdminDashboard(c) {
           active.slice(0,3).map(s=>{
             const co = cachedCourses.find(x=>x.id===s.course_id);
             return `<div style="padding:8px 0;border-bottom:1px solid var(--border);">
-              <div style="font-weight:600;">${s.title} - ${co?.name||'?'}</div>
+              <div style="font-weight:600;">${escHtml(s.title)} - ${co?.name||'?'}</div>
               <div style="font-size:.8rem;color:var(--muted);">${s.location||'No location'} &middot; <span class="badge bg-green">Live</span></div>
             </div>`;
           }).join('')}
@@ -2327,8 +2367,8 @@ async function renderAdminDashboard(c) {
         <thead><tr><th>Name</th><th>ID</th><th>Role</th><th>Department</th><th>Status</th></tr></thead>
         <tbody>
           ${[...allUsers].slice(0,6).map(u=>`<tr>
-            <td><strong>${u.full_name}</strong></td>
-            <td><code>${u.inst_id}</code></td>
+            <td><strong>${escHtml(u.full_name)}</strong></td>
+            <td><code>${escHtml(u.inst_id)}</code></td>
             <td><span class="badge ${u.role==='admin'?'bg-red':u.role==='faculty'?'bg-blue':'bg-gray'}">${u.role}</span></td>
             <td>${u.department||'-'}</td>
             <td><span class="badge ${u.status==='active'?'bg-green':u.status==='pending'?'bg-orange':'bg-red'}">${u.status}</span></td>
@@ -2589,8 +2629,8 @@ function filterUsersTable() {
     <th>Face</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody>${list.map(u=>`<tr>
       <td>${u.id ?? '-'}</td>
-      <td><strong>${u.full_name}</strong><br><small style="color:var(--muted);">${u.email}</small></td>
-      <td><code>${u.inst_id}</code></td>
+      <td><strong>${escHtml(u.full_name)}</strong><br><small style="color:var(--muted);">${escHtml(u.email)}</small></td>
+      <td><code>${escHtml(u.inst_id)}</code></td>
       <td><span class="badge ${u.role==='admin'?'bg-red':u.role==='faculty'?'bg-blue':'bg-gray'}">${u.role}</span></td>
       ${isStudentView
         ? `<td style="font-size:.82rem;">${u.branch||u.department||'-'}</td>
@@ -2600,12 +2640,12 @@ function filterUsersTable() {
       <td>${u.face_registered?'<span style="color:#2d9e6b;font-size:.82rem;">=</span>':'<span style="color:#9ca3af;font-size:.82rem;">-</span>'}</td>
       <td><span class="badge ${u.status==='active'?'bg-green':u.status==='pending'?'bg-orange':'bg-red'}">${u.status}</span></td>
       <td style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${u.status==='pending'?`<button class="btn btn-success btn-sm" onclick="approveUser('${u.inst_id}')"><i class="fa-solid fa-check"></i> Approve</button>`:''}
-        ${u.status==='active'?`<button class="btn btn-outline btn-sm" onclick="setUserStatus('${u.inst_id}','inactive')"><i class="fa-solid fa-ban"></i></button>`:''}
-        ${u.status==='inactive'?`<button class="btn btn-success btn-sm" onclick="setUserStatus('${u.inst_id}','active')"><i class="fa-solid fa-check"></i></button>`:''}
-        <button class="btn btn-outline btn-sm" onclick="openEditUser('${u.inst_id}')" title="Edit user"><i class="fa-solid fa-pen"></i></button>
-        <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal('${u.inst_id}','${u.full_name.replace(/'/g,'')}')" title="Reset password"><i class="fa-solid fa-key"></i></button>
-        ${u.inst_id!==currentUser.inst_id?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.inst_id}','${u.full_name}')"><i class="fa-solid fa-trash"></i></button>`:''}
+        ${u.status==='pending'?`<button class="btn btn-success btn-sm" onclick="approveUser('${escJs(u.inst_id)}')"><i class="fa-solid fa-check"></i> Approve</button>`:''}
+        ${u.status==='active'?`<button class="btn btn-outline btn-sm" onclick="setUserStatus('${escJs(u.inst_id)}','inactive')"><i class="fa-solid fa-ban"></i></button>`:''}
+        ${u.status==='inactive'?`<button class="btn btn-success btn-sm" onclick="setUserStatus('${escJs(u.inst_id)}','active')"><i class="fa-solid fa-check"></i></button>`:''}
+        <button class="btn btn-outline btn-sm" onclick="openEditUser('${escJs(u.inst_id)}')" title="Edit user"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal('${escJs(u.inst_id)}','${escJs(u.full_name)}')" title="Reset password"><i class="fa-solid fa-key"></i></button>
+        ${u.inst_id!==currentUser.inst_id?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${escJs(u.inst_id)}','${escJs(u.full_name)}')"><i class="fa-solid fa-trash"></i></button>`:''}
       </td>
     </tr>`).join('')}</tbody></table></div>`;
 }
@@ -2832,7 +2872,7 @@ async function saveNewUser() {
       password:pass,
     });
     closeModal('addUserModal');
-    toast(` ${role} "${newUser.full_name}" saved! ID: ${id}`, 'success');
+    toast(` ${role} "${escHtml(newUser.full_name)}" saved! ID: ${id}`, 'success');
     ['mu_name','mu_id','mu_email','mu_pass'].forEach(x=>{ const el=document.getElementById(x); if(el) el.value=''; });
     document.getElementById('mu_course').value='';
     updateAdminBranches();
@@ -2867,14 +2907,14 @@ async function renderPending(c) {
         `<div class="tbl-wrap"><table class="tbl">
           <thead><tr><th>Name</th><th>Enrollment No.</th><th>Email</th><th>Department</th><th>Registered</th><th>Actions</th></tr></thead>
           <tbody>${pending.map(u=>`<tr>
-            <td><strong>${u.full_name}</strong></td>
-            <td><code>${u.inst_id}</code></td>
-            <td>${u.email}</td>
+            <td><strong>${escHtml(u.full_name)}</strong></td>
+            <td><code>${escHtml(u.inst_id)}</code></td>
+            <td>${escHtml(u.email)}</td>
             <td>${u.department||'-'}</td>
             <td>${fmt(u.created_at)}</td>
             <td style="display:flex;gap:6px;">
-              <button class="btn btn-success btn-sm" onclick="approveAndRefresh('${u.inst_id}')"><i class="fa-solid fa-check"></i> Approve</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteAndRefresh('${u.inst_id}','${u.full_name}')"><i class="fa-solid fa-times"></i> Reject</button>
+              <button class="btn btn-success btn-sm" onclick="approveAndRefresh('${escJs(u.inst_id)}')"><i class="fa-solid fa-check"></i> Approve</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteAndRefresh('${escJs(u.inst_id)}','${escJs(u.full_name)}')"><i class="fa-solid fa-times"></i> Reject</button>
             </td>
           </tr>`).join('')}</tbody>
         </table></div>`}
@@ -2941,7 +2981,7 @@ async function renderCourses(c) {
             <thead><tr><th>Code</th><th>Subject Name</th><th>Type</th><th>Credits</th><th>Actions</th></tr></thead>
             <tbody>${bySem[sem].map(co=>`<tr>
               <td><code>${co.code}</code></td>
-              <td><strong>${co.name}</strong></td>
+              <td><strong>${escHtml(co.name)}</strong></td>
               <td><span class="badge ${co.course_type==='lab'?'bg-orange':'bg-blue'}">${co.course_type||'theory'}</span></td>
               <td>${co.credits ?? 3}</td>
               <td>
@@ -3382,7 +3422,7 @@ async function loadTimetableGrid() {
                           <div style="font-size:.78rem;font-weight:700;color:${border};line-height:1.2;">${slot.course_code}</div>
                           <div style="font-size:.72rem;color:var(--text);margin:2px 0;line-height:1.3;">${slot.course_name}</div>
                           <div style="font-size:.68rem;color:var(--muted);">${slot.faculty_name}</div>
-                          ${slot.room?`<div style="font-size:.65rem;color:var(--muted);">${slot.room}</div>`:''}
+                          ${slot.room?`<div style="font-size:.65rem;color:var(--muted);">${escHtml(slot.room)}</div>`:''}
                           ${slot.sub_section?`<span style="font-size:.65rem;background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;">Batch ${slot.sub_section}</span>`:''}
                           <button onclick="event.stopPropagation();deleteSlot(${slot.id})"
                             style="position:absolute;top:3px;right:3px;background:none;border:none;color:#e63946;cursor:pointer;font-size:.7rem;padding:2px;">
@@ -3570,9 +3610,9 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
         </label>
         <select class="form-control form-select" id="se_course">
           <option value="">-- Select Subject --</option>
-          ${semCourses.map(co=>`<option value="${co.id}" data-type="${co.course_type||'theory'}">${co.code} - ${co.name}</option>`).join('')}
+          ${semCourses.map(co=>`<option value="${co.id}" data-type="${co.course_type||'theory'}">${co.code} - ${escHtml(co.name)}</option>`).join('')}
           <optgroup label="-- All Subjects --">
-            ${Object.values(bySem).flat().filter(co=>!semCourses.find(s=>s.id===co.id)).map(co=>`<option value="${co.id}" data-type="${co.course_type||'theory'}">${co.code} - ${co.name}</option>`).join('')}
+            ${Object.values(bySem).flat().filter(co=>!semCourses.find(s=>s.id===co.id)).map(co=>`<option value="${co.id}" data-type="${co.course_type||'theory'}">${co.code} - ${escHtml(co.name)}</option>`).join('')}
           </optgroup>
         </select>
       </div>
@@ -3582,7 +3622,7 @@ async function openSlotEditor(day, startTime, endTime, slotId, branch, section, 
         </label>
         <select class="form-control form-select" id="se_faculty">
           <option value="">-- Select Teacher --</option>
-          ${facList.map(f=>`<option value="${f.inst_id}">${f.full_name} (${f.inst_id})</option>`).join('')}
+          ${facList.map(f=>`<option value="${escHtml(f.inst_id)}">${escHtml(f.full_name)} (${escHtml(f.inst_id)})</option>`).join('')}
         </select>
       </div>
       <div class="form-row">
@@ -3871,7 +3911,7 @@ async function renderAllSessions(c) {
             const co = cs.find(x=>x.id===s.course_id);
             const fac = us.find(x=>x.inst_id===s.faculty_id);
             return `<tr>
-              <td><strong>${s.title}</strong></td>
+              <td><strong>${escHtml(s.title)}</strong></td>
               <td>${co?.name||'?'} <small style="color:var(--muted);">(${co?.code||''})</small></td>
               <td>${fac?.full_name||'?'}</td>
               <td>${s.location||'-'}</td>
@@ -3915,12 +3955,12 @@ async function renderReports(c) {
         const present = (att.records||[]).filter(a=>a.status==='present').length;
         const p = pct(present, closed.length);
         return `<tr>
-          <td><strong>${stu.full_name}</strong></td>
-          <td><code>${stu.inst_id}</code></td>
+          <td><strong>${escHtml(stu.full_name)}</strong></td>
+          <td><code>${escHtml(stu.inst_id)}</code></td>
           <td>${stu.department||'-'}</td>
           <td style="min-width:160px;">${pctBar(p)}</td>
         </tr>`;
-      } catch { return `<tr><td><strong>${stu.full_name}</strong></td><td><code>${stu.inst_id}</code></td><td>${stu.department||'-'}</td><td>N/A</td></tr>`; }
+      } catch { return `<tr><td><strong>${escHtml(stu.full_name)}</strong></td><td><code>${escHtml(stu.inst_id)}</code></td><td>${escHtml(stu.department||'-')}</td><td>N/A</td></tr>`; }
     }));
     if (tbody) tbody.innerHTML = rows.join('');
   }
@@ -4033,8 +4073,8 @@ async function renderFacStudents(c) {
     }
     tbody.innerHTML = list.map((u,i)=>`<tr>
       <td style="color:var(--muted);font-size:.8rem;">${i+1}</td>
-      <td><strong>${u.full_name}</strong><br><small style="color:var(--muted);">${u.email}</small></td>
-      <td><code style="font-size:.82rem;">${u.inst_id}</code></td>
+      <td><strong>${escHtml(u.full_name)}</strong><br><small style="color:var(--muted);">${escHtml(u.email)}</small></td>
+      <td><code style="font-size:.82rem;">${escHtml(u.inst_id)}</code></td>
       <td style="font-size:.82rem;">${u.branch||u.department||'-'}</td>
       <td><span style="font-weight:700;">${u.section||'-'}</span></td>
       <td style="font-size:.82rem;">${u.semester||'-'}</td>
@@ -4586,7 +4626,7 @@ async function openExtraClassModal() {
     const courses = await API.get('/courses').catch(()=>[]);
     const list = Array.isArray(courses) ? courses : [];
     ec_course.innerHTML = '<option value="">- Select course -</option>' +
-      list.map(co => `<option value="${co.id}">${co.name} (${co.code})</option>`).join('');
+      list.map(co => `<option value="${co.id}">${escHtml(co.name)} (${co.code})</option>`).join('');
   } catch(e) {
     ec_course.innerHTML = '<option value="">Failed to load courses</option>';
   }
@@ -4740,7 +4780,7 @@ async function renderFacQR(c) {
       <div class="card">
         <div class="section-title"><i class="fa-solid fa-info-circle"></i> Session Info</div>
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <div><div style="font-size:.75rem;color:var(--muted);">SESSION</div><div style="font-weight:600;">${active.title}</div></div>
+          <div><div style="font-size:.75rem;color:var(--muted);">SESSION</div><div style="font-weight:600;">${escHtml(active.title)}</div></div>
           <div><div style="font-size:.75rem;color:var(--muted);">COURSE</div><div style="font-weight:600;">${co?.name||'?'} (${co?.code||''})</div></div>
           <div><div style="font-size:.75rem;color:var(--muted);">LOCATION</div><div style="font-weight:600;">${active.location||'-'}</div></div>
           <div><div style="font-size:.75rem;color:var(--muted);">GPS RANGE</div><div style="font-weight:600;">Within ${settings.gps_range||10} meters</div></div>
@@ -4814,7 +4854,7 @@ async function renderFacAttendance(c) {
         <option value="">- Select a session -</option>
         ${ss.map(s=>{ const co=cachedCourses.find(x=>x.id===s.course_id);
           const info = [co?.name||'?', s.branch||'', s.section?'Sec '+s.section:''].filter(Boolean).join(' &middot; ');
-          return `<option value="${s.id}" data-branch="${s.branch||''}" data-section="${s.section||''}">${s.title} - ${info} (${fmtDT(s.scheduled_at)})</option>`;
+          return `<option value="${s.id}" data-branch="${escHtml(s.branch||'')}" data-section="${s.section||''}">${escHtml(s.title)} - ${info} (${fmtDT(s.scheduled_at)})</option>`;
         }).join('')}
       </select>
       <div id="sessionInfoBadge" style="margin-top:8px;"></div>
@@ -4930,7 +4970,7 @@ async function openCreateSession() {
   cachedCourses = Array.isArray(courses)?courses:[];
   const sel = document.getElementById('ms_course');
   sel.innerHTML = cachedCourses.length
-    ? cachedCourses.map(c=>`<option value="${c.id}">${c.name} (${c.code})</option>`).join('')
+    ? cachedCourses.map(c=>`<option value="${c.id}">${escHtml(c.name)} (${c.code})</option>`).join('')
     : '<option value="">No courses available - ask admin to add courses</option>';
   makeSearchableSelect('ms_course');
   document.getElementById('ms_datetime').value = new Date().toISOString().slice(0,16);
@@ -5462,7 +5502,7 @@ async function renderStuScan(c) {
           <i class="fa-solid fa-circle-check" style="font-size:2.1rem;color:var(--success);"></i>
         </div>
         <div style="font-size:1.15rem;font-weight:800;color:var(--success);margin-bottom:6px;">Already Marked Present!</div>
-        <p style="color:var(--muted);font-size:.9rem;">${active.title} - ${co?.name||''}</p>
+        <p style="color:var(--muted);font-size:.9rem;">${escHtml(active.title)} - ${co?.name||''}</p>
         <p style="font-size:.8rem;color:var(--muted);margin-top:6px;">Method: ${alreadyMarked.method} &middot; ${fmtDT(alreadyMarked.marked_at)}</p>
       </div>`; return;
   }
@@ -6010,13 +6050,13 @@ async function renderProfile(c, user) {
     <div style="display:grid;grid-template-columns:280px 1fr;gap:20px;max-width:900px;">
       <div class="card" style="text-align:center;">
         <div style="width:80px;height:80px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:#fff;margin:0 auto 16px;">${user.full_name[0]}</div>
-        <div style="font-size:1.1rem;font-weight:700;">${user.full_name}</div>
-        <div style="font-size:.85rem;color:var(--muted);">${user.email}</div>
+        <div style="font-size:1.1rem;font-weight:700;">${escHtml(user.full_name)}</div>
+        <div style="font-size:.85rem;color:var(--muted);">${escHtml(user.email)}</div>
         <span class="badge ${user.role==='admin'?'bg-red':user.role==='faculty'?'bg-blue':'bg-gray'}" style="margin-top:10px;">${user.role}</span>
         <span class="badge bg-green" style="margin-top:4px;">${user.status}</span>
         <hr style="margin:16px 0;border-color:var(--border);">
         <div style="font-size:.85rem;text-align:left;">
-          <div style="margin-bottom:8px;"><strong>ID:</strong> <code>${user.inst_id}</code></div>
+          <div style="margin-bottom:8px;"><strong>ID:</strong> <code>${escHtml(user.inst_id)}</code></div>
           <div style="margin-bottom:8px;"><strong>Department:</strong> ${user.department||'-'}</div>
           <div><strong>Joined:</strong> ${fmt(user.created_at)}</div>
         </div>
@@ -6024,8 +6064,8 @@ async function renderProfile(c, user) {
       <div class="card">
         <div class="section-title">Update Profile</div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="prof_name" value="${user.full_name}"></div>
-          <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="prof_email" type="email" value="${user.email}"></div>
+          <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="prof_name" value="${escHtml(user.full_name)}"></div>
+          <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="prof_email" type="email" value="${escHtml(user.email)}"></div>
         </div>
         <div class="form-group"><label class="form-label">Department</label><input class="form-control" id="prof_dept" value="${user.department||''}"></div>
         <button class="btn btn-primary" onclick="updateProfile()"><i class="fa-solid fa-save"></i> Update Profile</button>
@@ -6248,7 +6288,7 @@ function handleCSVDrop(event) {
 function setCSVFile(file) {
   _csvFile = file;
   document.getElementById('csvFileName').innerHTML =
-    `<i class="fa-solid fa-file-csv" style="color:var(--success);"></i> <strong>${file.name}</strong> (${(file.size/1024).toFixed(1)} KB)`;
+    `<i class="fa-solid fa-file-csv" style="color:var(--success);"></i> <strong>${escHtml(file.name)}</strong> (${(file.size/1024).toFixed(1)} KB)`;
   document.getElementById('importBtn').disabled = false;
   document.getElementById('dropZone').style.borderColor = 'var(--success)';
   document.getElementById('importResults').style.display = 'none';
@@ -6302,7 +6342,7 @@ function showImportResults(data) {
     </div>
     ${skipped.length ? `
       <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px;">Skipped (already exist):</div>
-      <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px;">${skipped.map(s=>`Row ${s.row}: ${s.inst_id}`).join(', ')}</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px;">${skipped.map(s=>`Row ${s.row}: ${escHtml(s.inst_id)}`).join(', ')}</div>
     ` : ''}
     ${errors.length ? `
       <div style="font-size:.78rem;color:var(--accent2);margin-bottom:4px;">Errors:</div>
@@ -6455,7 +6495,7 @@ async function showSectionInsights(branch, section) {
           <div style="font-weight:700;font-size:.9rem;color:#991b1b;margin-bottom:8px;"><i class="fa-solid fa-circle-xmark"></i> Critical Students (below 60%)</div>
           ${data.critical_students.map(s=>`
             <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.85rem;">
-              <span>${s.name} <code style="font-size:.75rem;">${s.inst_id}</code></span>
+              <span>${escHtml(s.name)} <code style="font-size:.75rem;">${escHtml(s.inst_id)}</code></span>
               <span style="color:#991b1b;font-weight:600;">${s.percentage}% (${s.present}/${s.total})</span>
             </div>`).join('')}
         </div>` : ''}
@@ -6464,7 +6504,7 @@ async function showSectionInsights(branch, section) {
           <div style="font-weight:700;font-size:.9rem;color:#92400e;margin-bottom:8px;"><i class="fa-solid fa-triangle-exclamation"></i> At Risk (60-74%)</div>
           ${data.at_risk_students.map(s=>`
             <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.85rem;">
-              <span>${s.name} <code style="font-size:.75rem;">${s.inst_id}</code></span>
+              <span>${escHtml(s.name)} <code style="font-size:.75rem;">${escHtml(s.inst_id)}</code></span>
               <span style="color:#92400e;font-weight:600;">${s.percentage}% (${s.present}/${s.total})</span>
             </div>`).join('')}
         </div>` : ''}
@@ -6587,7 +6627,7 @@ async function bulkPromote() {
     toast(`Promoted ${data.promoted} students!`, 'success');
     result.innerHTML = `<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i>
       <strong>${data.promoted} students promoted</strong> to ${toSem} semester!
-      ${data.students.slice(0,5).map(s=>`<br>&nbsp;&nbsp;- ${s.name} (${s.inst_id})`).join('')}
+      ${data.students.slice(0,5).map(s=>`<br>&nbsp;&nbsp;- ${escHtml(s.name)} (${escHtml(s.inst_id)})`).join('')}
       ${data.students.length>5?`<br>&nbsp;&nbsp;...and ${data.students.length-5} more`:''}</div>`;
   } catch(e) {
     toast(e.message||'Failed','error');
@@ -6617,17 +6657,17 @@ function searchStudentsForPromo() {
       wrap.innerHTML = `<div class="tbl-wrap"><table class="tbl">
         <thead><tr><th>Name</th><th>Enrollment</th><th>Section</th><th>Semester</th><th>Branch</th><th>Lab Batch</th><th>Actions</th></tr></thead>
         <tbody>${students.map(s=>`<tr>
-          <td><strong>${s.full_name}</strong></td>
-          <td><code>${s.inst_id}</code></td>
+          <td><strong>${escHtml(s.full_name)}</strong></td>
+          <td><code>${escHtml(s.inst_id)}</code></td>
           <td>${s.section||'-'}</td>
           <td>${s.semester||'-'}</td>
           <td style="font-size:.78rem;">${s.branch||'-'}</td>
           <td>${s.sub_section||'-'}</td>
           <td style="display:flex;gap:5px;">
-            <button class="btn btn-primary btn-sm" onclick="openEditStudentModal('${s.inst_id}','${s.full_name.replace(/'/g,'')}','${s.section||''}','${s.semester||''}','${s.sub_section||''}','${(s.branch||'').replace(/'/g,'')}')">
+            <button class="btn btn-primary btn-sm" onclick="openEditStudentModal('${escJs(s.inst_id)}','${escJs(s.full_name)}','${s.section||''}','${s.semester||''}','${s.sub_section||''}','${(s.branch||'').replace(/'/g,'')}')">
               <i class="fa-solid fa-pen"></i> Edit
             </button>
-            <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal('${s.inst_id}','${s.full_name.replace(/'/g,'')}')">
+            <button class="btn btn-outline btn-sm" onclick="openResetPasswordModal('${escJs(s.inst_id)}','${escJs(s.full_name)}')">
               <i class="fa-solid fa-key"></i> Reset PWD
             </button>
           </td>
