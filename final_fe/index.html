@@ -1076,6 +1076,8 @@ button, input, select, textarea { font-family: inherit; }
         <div class="nav-section">Reports</div>
         <a href="#" onclick="adminNav('reports')" id="anav-reports"><i class="fa-solid fa-chart-bar"></i> Attendance Reports</a>
         <a href="#" onclick="adminNav('defaulters')" id="anav-defaulters"><i class="fa-solid fa-triangle-exclamation" style="color:#e63946;"></i> Defaulter List</a>
+        <a href="#" onclick="adminNav('flags')" id="anav-flags"><i class="fa-solid fa-flag"></i> Proxy Alerts</a>
+        <a href="#" onclick="adminNav('leave')" id="anav-leave"><i class="fa-solid fa-calendar-check"></i> Leave / OD Requests</a>
         <a href="#" onclick="adminNav('promote')" id="anav-promote"><i class="fa-solid fa-arrow-up-right-dots" style="color:#2d9e6b;"></i> Promote Students</a>
         <a href="#" onclick="adminNav('audit')" id="anav-audit"><i class="fa-solid fa-scroll"></i> Audit Log</a>
         <div class="nav-section">System</div>
@@ -1119,6 +1121,10 @@ button, input, select, textarea { font-family: inherit; }
         <a href="#" onclick="facNav('qr')" id="fnav-qr"><i class="fa-solid fa-qrcode"></i> Live QR Code</a>
         <a href="#" onclick="facNav('attendance')" id="fnav-attendance"><i class="fa-solid fa-clipboard-list"></i> Attendance Sheet</a>
         <a href="#" onclick="facNav('students')" id="fnav-students"><i class="fa-solid fa-user-graduate"></i> My Students</a>
+        <a href="#" onclick="facNav('defaulters')" id="fnav-defaulters"><i class="fa-solid fa-triangle-exclamation"></i> Defaulters</a>
+        <a href="#" onclick="facNav('flags')" id="fnav-flags"><i class="fa-solid fa-flag"></i> Proxy Alerts</a>
+        <a href="#" onclick="facNav('leave')" id="fnav-leave"><i class="fa-solid fa-calendar-check"></i> Leave / OD Requests</a>
+        <a href="#" onclick="facNav('reports')" id="fnav-reports"><i class="fa-solid fa-file-excel"></i> Monthly Report</a>
         <div class="nav-section">Account</div>
         <a href="#" onclick="facNav('profile')" id="fnav-profile"><i class="fa-solid fa-user-circle"></i> My Profile</a>
       </nav>
@@ -1158,6 +1164,7 @@ button, input, select, textarea { font-family: inherit; }
         <a href="#" onclick="stuNav('timetable')" id="snav-timetable"><i class="fa-solid fa-calendar-days"></i> My Timetable</a>
         <a href="#" onclick="stuNav('scan')" id="snav-scan"><i class="fa-solid fa-qrcode"></i> Mark Attendance</a>
         <a href="#" onclick="stuNav('history')" id="snav-history"><i class="fa-solid fa-history"></i> Attendance History</a>
+        <a href="#" onclick="stuNav('leave')" id="snav-leave"><i class="fa-solid fa-calendar-check"></i> Leave / OD</a>
         <div class="nav-section">Account</div>
         <a href="#" onclick="stuNav('profile')" id="snav-profile"><i class="fa-solid fa-user-circle"></i> My Profile</a>
       </nav>
@@ -1453,32 +1460,6 @@ button, input, select, textarea { font-family: inherit; }
   </div>
 </div>
 
-<!-- ═══ FORGOT PASSWORD MODAL ═══ -->
-<div class="modal-overlay" id="forgotPassModal">
-  <div class="modal-box" style="max-width:420px;">
-    <h3><i class="fa-solid fa-key" style="color:var(--accent);"></i> Reset Password</h3>
-    <div id="fpStep1">
-      <div class="form-group">
-        <label class="form-label">Enrollment ID or Email</label>
-        <input class="form-control" id="fp_credential" placeholder="Your ID or email">
-      </div>
-      <div class="alert alert-info" style="font-size:.82rem;">
-        <i class="fa-solid fa-circle-info"></i>
-        Contact your admin to reset your password: <strong>admin@smartattendance.com</strong>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeModal('forgotPassModal')">Cancel</button>
-        <button class="btn btn-primary" onclick="submitForgotPass()"><i class="fa-solid fa-paper-plane"></i> Send Request</button>
-      </div>
-    </div>
-    <div id="fpStep2" style="display:none;text-align:center;padding:16px 0;">
-      <div style="font-size:2.5rem;margin-bottom:10px;">✅</div>
-      <div style="font-weight:700;margin-bottom:8px;">Request Sent!</div>
-      <p style="color:var(--muted);font-size:.85rem;">Your admin will reset your password and notify you.</p>
-      <button class="btn btn-primary" style="margin-top:14px;" onclick="closeModal('forgotPassModal')">OK</button>
-    </div>
-  </div>
-</div>
 
 <script>
 /* ========== SIDEBAR TOGGLE (mobile) ========== */
@@ -1531,22 +1512,6 @@ function hideLoading() {
 /* ==============================================================
    FORGOT PASSWORD
 ============================================================== */
-function openForgotPassword() {
-  document.getElementById('fp_credential').value = '';
-  document.getElementById('fpStep1').style.display = 'block';
-  document.getElementById('fpStep2').style.display = 'none';
-  openModal('forgotPassModal');
-}
-function submitForgotPass() {
-  const cred = document.getElementById('fp_credential').value.trim();
-  if (!cred) { toast('Please enter your ID or email','warning'); return; }
-  // In production this would call an API endpoint
-  // For now we log the request and show confirmation
-  console.log('Password reset requested for:', cred);
-  document.getElementById('fpStep1').style.display = 'none';
-  document.getElementById('fpStep2').style.display = 'block';
-}
-
 /* ==============================================================
    CSV EXPORT - works for any table data
 ============================================================== */
@@ -1630,140 +1595,325 @@ function printPage() {
 /* ==============================================================
    DEFAULTER LIST - students < 75% attendance
 ============================================================== */
+// BUG FIX: this used to compare each student's ALL-TIME attendance count
+// (across every course/branch/section they were ever in) against the
+// total number of CLOSED SESSIONS SYSTEM-WIDE (every course, every
+// branch) — the same numerator/denominator mismatch bug fixed in the
+// backend's section_insights endpoint, except worse here since neither
+// side was scoped at all. In a school with more than one class running,
+// this made every single student's "defaulter" percentage meaningless.
+// Replaced with the new course-scoped /attendance/defaulters endpoint,
+// which computes present/total correctly within one course at a time
+// and also excludes approved leave/OD dates from the denominator.
 async function renderDefaulters(c) {
   c.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
-  try {
-    const [ud, sd] = await Promise.all([
-      API.get('/users?role=student&limit=500').catch(()=>({users:[]})),
-      API.get('/sessions?limit=500').catch(()=>({sessions:[]})),
-    ]);
-    const students = ud.users || [];
-    const closed   = (sd.sessions||[]).filter(s=>s.status==='closed');
-
-    const rows = await Promise.all(students.map(async stu => {
-      const att = await API.get(`/attendance/student/${stu.inst_id}?limit=500`).catch(()=>({records:[]}));
-      const present = (att.records||[]).filter(r=>r.status==='present').length;
-      const pct = closed.length ? Math.round(present/closed.length*100) : 100;
-      return { ...stu, present, total: closed.length, pct };
-    }));
-
-    const defaulters = rows.filter(r => r.pct < 75).sort((a,b) => a.pct - b.pct);
-
-    c.innerHTML = `
-      <div class="page-header">
-        <h2><i class="fa-solid fa-triangle-exclamation" style="color:var(--accent2);"></i> Defaulter List
-          <span class="badge bg-red" style="margin-left:8px;">${defaulters.length} students</span>
-        </h2>
-        <div class="btn-group">
-          <button class="btn btn-outline btn-sm" onclick="printPage()"><i class="fa-solid fa-print"></i> Print</button>
-          <button class="btn btn-outline btn-sm" onclick="exportDefaultersCSV()"><i class="fa-solid fa-download"></i> CSV</button>
+  const courses = await API.get('/courses').catch(()=>[]);
+  window._defCourses = Array.isArray(courses) ? courses : [];
+  const courseOpts = window._defCourses.map(co => `<option value="${escHtml(co.id)}">${escHtml(co.name)} (${escHtml(co.code)})</option>`).join('');
+  c.innerHTML = `
+    <div class="page-header">
+      <h2><i class="fa-solid fa-triangle-exclamation" style="color:var(--accent2);"></i> Defaulter List</h2>
+    </div>
+    <div class="card" style="max-width:900px;">
+      <div class="form-row" style="align-items:flex-end;">
+        <div class="form-group" style="flex:2;">
+          <label class="form-label">Course</label>
+          <select class="form-control form-select" id="def_course">${courseOpts || '<option value="">No courses found</option>'}</select>
+        </div>
+        <div class="form-group" style="max-width:140px;">
+          <label class="form-label">Threshold %</label>
+          <input class="form-control" id="def_threshold" type="number" value="75" min="0" max="100">
+        </div>
+        <div class="form-group" style="max-width:160px;">
+          <button class="btn btn-primary" style="width:100%;" onclick="loadDefaulters()"><i class="fa-solid fa-magnifying-glass"></i> Show</button>
         </div>
       </div>
-      <div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation"></i>
-        Students below <strong>75%</strong> attendance are at risk of being detained.
-        Total closed sessions: <strong>${closed.length}</strong>
-      </div>
+    </div>
+    <div id="defResults" style="margin-top:16px;"></div>`;
+  if (window._defCourses.length) loadDefaulters();
+}
+
+async function loadDefaulters() {
+  const courseId   = document.getElementById('def_course')?.value;
+  const threshold  = document.getElementById('def_threshold')?.value || 75;
+  const box = document.getElementById('defResults');
+  if (!courseId) { if (box) box.innerHTML = '<div class="alert alert-warning">No course selected.</div>'; return; }
+  if (box) box.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+  try {
+    const list = await API.get(`/attendance/defaulters?course_id=${encodeURIComponent(courseId)}&threshold=${encodeURIComponent(threshold)}`);
+    window._defaultersCache = list;
+    if (!box) return;
+    box.innerHTML = `
+      <div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation"></i> ${list.length} student(s) below ${escHtml(String(threshold))}% in this course.</div>
       <div class="card">
-        ${!defaulters.length
-          ? '<div class="empty-state"><i class="fa-solid fa-check-circle" style="color:var(--success);"></i><p>No defaulters! All students above 75%</p></div>'
+        <div class="btn-group" style="margin-bottom:10px;">
+          <button class="btn btn-outline btn-sm" onclick="exportDefaultersCSV()"><i class="fa-solid fa-download"></i> CSV</button>
+        </div>
+        ${!list.length
+          ? '<div class="empty-state"><i class="fa-solid fa-check-circle" style="color:var(--success);"></i><p>No defaulters for this course.</p></div>'
           : `<div class="tbl-wrap"><table class="tbl">
-              <thead><tr><th>Rank</th><th>Name</th><th>Enrollment</th><th>Branch</th><th>Section</th><th>Present</th><th>Absent</th><th>Attendance</th></tr></thead>
-              <tbody>${defaulters.map((s,i) => `<tr>
+              <thead><tr><th>Rank</th><th>Name</th><th>Enrollment</th><th>Present</th><th>Total</th><th>Percent</th></tr></thead>
+              <tbody>${list.map((s,i) => `<tr>
                 <td style="font-weight:700;color:var(--accent2);">#${i+1}</td>
                 <td><strong>${escHtml(s.full_name)}</strong></td>
-                <td><code>${escHtml(s.inst_id)}</code></td>
-                <td style="font-size:.8rem;">${s.branch||s.department||'-'}</td>
-                <td>${s.section||'-'}</td>
+                <td><code>${escHtml(s.student_id)}</code></td>
                 <td style="color:var(--success);">${s.present}</td>
-                <td style="color:var(--accent2);">${s.total-s.present}</td>
-                <td><div class="pct-bar" style="width:80px;display:inline-block;vertical-align:middle;margin-right:6px;"><div class="pct-bar-fill danger" style="width:${s.pct}%;"></div></div>
-                  <strong style="color:var(--accent2);">${s.pct}%</strong></td>
+                <td>${s.total}</td>
+                <td><strong style="color:var(--accent2);">${s.percent}%</strong></td>
               </tr>`).join('')}</tbody>
             </table></div>`}
       </div>`;
-
-    window._defaultersCache = defaulters;
   } catch(e) {
-    c.innerHTML = `<div class="alert alert-warning">Error: ${e.message}</div>`;
+    if (box) box.innerHTML = `<div class="alert alert-warning">Error: ${escHtml(e.message)}</div>`;
   }
 }
 
 function exportDefaultersCSV() {
   const d = window._defaultersCache || [];
-  const rows = d.map((s,i) => [i+1, s.full_name, s.inst_id, s.branch||'', s.section||'',
-    s.present, s.total-s.present, s.pct+'%']);
-  exportToCSV(rows, ['Rank','Name','Enrollment','Branch','Section','Present','Absent','Attendance%'],
-    'defaulters_list');
+  const rows = d.map((s,i) => [i+1, s.full_name, s.student_id, s.present, s.total, s.percent+'%']);
+  exportToCSV(rows, ['Rank','Name','Enrollment','Present','Total','Percent'], 'defaulters_list');
 }
 
 /* ==============================================================
-   AUDIT LOG - in-memory log of admin actions
+   AUDIT LOG — now backed by the real server-side attendance_audit_log
+   table (see GET /api/attendance/audit-log), not a client-side array.
+   BUG FIX: the old version lived entirely in an in-memory JS array —
+   it reset on every page refresh, never synced across devices/browsers,
+   and only 3 of the app's many mutating actions ever wrote to it
+   (approve/delete/bulk-approve user — attendance edits never did).
 ============================================================== */
-const auditLog = [];
-function logAudit(action, detail) {
-  auditLog.unshift({
-    action, detail,
-    by:   currentUser?.full_name || 'Unknown',
-    time: new Date().toISOString(),
-  });
-  if (auditLog.length > 200) auditLog.pop(); // keep last 200
+async function renderAuditLog(c) {
+  c.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+  try {
+    const res = await API.get('/attendance/audit-log?limit=200');
+    const entries = res.entries || [];
+    window._auditCache = entries;
+    c.innerHTML = `
+      <div class="page-header">
+        <h2><i class="fa-solid fa-scroll" style="color:var(--accent);"></i> Attendance Audit Log</h2>
+        <button class="btn btn-outline btn-sm" onclick="exportAuditCSV()"><i class="fa-solid fa-download"></i> Export CSV</button>
+      </div>
+      <div class="alert alert-info" style="margin-bottom:12px;"><i class="fa-solid fa-circle-info"></i> Every attendance record created or edited, with who made the change and the before/after value — for resolving disputed attendance.</div>
+      <div class="card">
+        ${!entries.length
+          ? '<div class="empty-state"><i class="fa-solid fa-scroll"></i><p>No audit entries yet</p></div>'
+          : `<div class="tbl-wrap"><table class="tbl">
+              <thead><tr><th>Time</th><th>Action</th><th>Student</th><th>Session</th><th>Old \u2192 New</th><th>By</th></tr></thead>
+              <tbody>${entries.map(e => `<tr>
+                <td style="font-size:.78rem;white-space:nowrap;">${new Date(e.created_at).toLocaleString('en-IN')}</td>
+                <td><span class="badge ${e.action==='update'?'bg-blue':'bg-green'}">${escHtml(e.action)}</span></td>
+                <td><code>${escHtml(e.student_id||'-')}</code></td>
+                <td>#${e.session_id ?? '-'}</td>
+                <td style="font-size:.82rem;">${escHtml(e.old_status||'—')} \u2192 ${escHtml(e.new_status||'—')}</td>
+                <td style="font-size:.82rem;">${escHtml(e.changed_by||'-')}</td>
+              </tr>`).join('')}</tbody>
+            </table></div>`}
+      </div>`;
+  } catch(e) {
+    c.innerHTML = `<div class="alert alert-warning">Error loading audit log: ${escHtml(e.message)}</div>`;
+  }
 }
 
-function renderAuditLog(c) {
-  c.innerHTML = `
-    <div class="page-header">
-      <h2><i class="fa-solid fa-scroll" style="color:var(--accent);"></i> Audit Log</h2>
-      <button class="btn btn-outline btn-sm" onclick="exportAuditCSV()"><i class="fa-solid fa-download"></i> Export CSV</button>
-    </div>
-    <div class="card">
-      ${!auditLog.length
-        ? '<div class="empty-state"><i class="fa-solid fa-scroll"></i><p>No audit entries yet</p></div>'
-        : `<div class="tbl-wrap"><table class="tbl">
-            <thead><tr><th>Time</th><th>Action</th><th>Detail</th><th>By</th></tr></thead>
-            <tbody>${auditLog.map(e => `<tr>
-              <td style="font-size:.78rem;white-space:nowrap;">${new Date(e.time).toLocaleString('en-IN')}</td>
-              <td><span class="badge ${e.action.includes('DELETE')||e.action.includes('REJECT')?'bg-red':e.action.includes('APPROVE')?'bg-green':'bg-blue'}">${e.action}</span></td>
-              <td>${e.detail}</td>
-              <td style="font-size:.82rem;">${e.by}</td>
-            </tr>`).join('')}</tbody>
-          </table></div>`}
-    </div>`;
-}
+// User-management actions (approve/delete/bulk-approve) still call this.
+// It's now a no-op — the real, persistent audit trail is attendance-only
+// (see renderAuditLog() above, backed by GET /attendance/audit-log).
+// Kept as a stub rather than deleted so those 3 existing call sites don't
+// throw; extending real server-side audit logging to user-management
+// actions too would be a reasonable next step but is out of scope here.
+function logAudit(action, detail) { /* no-op */ }
 
 function exportAuditCSV() {
-  const rows = auditLog.map(e => [
-    new Date(e.time).toLocaleString('en-IN'), e.action, e.detail, e.by
+  const rows = (window._auditCache||[]).map(e => [
+    new Date(e.created_at).toLocaleString('en-IN'), e.action, e.student_id||'', e.session_id??'', e.old_status||'', e.new_status||'', e.changed_by||''
   ]);
-  exportToCSV(rows, ['Time','Action','Detail','By'], 'audit_log');
+  exportToCSV(rows, ['Time','Action','Student','Session','Old Status','New Status','Changed By'], 'audit_log');
+}
+
+/* ==============================================================
+   PROXY-DETECTION FLAGS — NEW FEATURE. Faculty/admin review queue for
+   the server's device/GPS heuristics (see _check_proxy_signals in
+   routers/attendance.py). Never auto-blocks a student — this is purely
+   for a human to look at and mark resolved.
+============================================================== */
+async function renderFlagsPanel(c) {
+  c.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+  try {
+    const flags = await API.get('/attendance/flags?resolved=false&limit=200');
+    window._flagsCache = flags;
+    c.innerHTML = `
+      <div class="page-header">
+        <h2><i class="fa-solid fa-flag" style="color:var(--accent2);"></i> Proxy Attendance Alerts
+          <span class="badge bg-red" style="margin-left:8px;">${flags.length} open</span>
+        </h2>
+        <div class="btn-group">
+          <button class="btn btn-outline btn-sm" onclick="loadFlags(true)"><i class="fa-solid fa-eye-slash"></i> Show Resolved</button>
+          <button class="btn btn-outline btn-sm" onclick="loadFlags(false)"><i class="fa-solid fa-eye"></i> Show Open</button>
+        </div>
+      </div>
+      <div class="alert alert-info"><i class="fa-solid fa-circle-info"></i> These are signals, not proof — a flag can have an innocent explanation (shared classroom wifi, a friend's hotspot). Use judgement before acting on one.</div>
+      <div class="card" id="flagsTableWrap"></div>`;
+    renderFlagsTable(flags);
+  } catch(e) {
+    c.innerHTML = `<div class="alert alert-warning">Error: ${escHtml(e.message)}</div>`;
+  }
+}
+async function loadFlags(resolved) {
+  try {
+    const flags = await API.get(`/attendance/flags?resolved=${resolved}&limit=200`);
+    window._flagsCache = flags;
+    renderFlagsTable(flags);
+  } catch(e) { toast(e.message,'error'); }
+}
+function renderFlagsTable(flags) {
+  const wrap = document.getElementById('flagsTableWrap');
+  if (!wrap) return;
+  wrap.innerHTML = !flags.length
+    ? '<div class="empty-state"><i class="fa-solid fa-check-circle" style="color:var(--success);"></i><p>Nothing here.</p></div>'
+    : `<div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Time</th><th>Severity</th><th>Session</th><th>Student</th><th>Reason</th><th></th></tr></thead>
+        <tbody>${flags.map(f => `<tr>
+          <td style="font-size:.78rem;white-space:nowrap;">${new Date(f.created_at).toLocaleString('en-IN')}</td>
+          <td><span class="badge ${f.severity==='high'?'bg-red':f.severity==='warning'?'bg-orange':'bg-blue'}">${escHtml(f.severity)}</span></td>
+          <td>#${f.session_id}</td>
+          <td><code>${escHtml(f.student_id||'-')}</code></td>
+          <td style="font-size:.85rem;">${escHtml(f.reason)}</td>
+          <td>${f.resolved
+            ? '<span class="badge bg-green">resolved</span>'
+            : `<button class="btn btn-outline btn-sm" onclick="resolveFlag(${f.id})"><i class="fa-solid fa-check"></i> Mark Reviewed</button>`}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+}
+async function resolveFlag(id) {
+  try {
+    await API.patch(`/attendance/flags/${id}`, { resolved: true });
+    toast('Flag marked reviewed.','success');
+    loadFlags(false);
+  } catch(e) { toast(e.message,'error'); }
+}
+
+/* ==============================================================
+   LEAVE / OD WORKFLOW — NEW FEATURE. Faculty/admin approve or reject;
+   an approved request excludes its dates from that student's attendance
+   percentage denominator (see routers/attendance.py's
+   _excused_dates_by_student and the /defaulters endpoint).
+============================================================== */
+async function renderLeavePanel(c) {
+  c.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+  try {
+    const res = await API.get('/leave?status=pending&limit=200');
+    const list = res.requests || [];
+    c.innerHTML = `
+      <div class="page-header">
+        <h2><i class="fa-solid fa-calendar-check" style="color:var(--accent);"></i> Leave / OD Requests
+          <span class="badge bg-orange" style="margin-left:8px;">${list.length} pending</span>
+        </h2>
+        <div class="btn-group">
+          <button class="btn btn-outline btn-sm" onclick="loadLeaveRequests('pending')">Pending</button>
+          <button class="btn btn-outline btn-sm" onclick="loadLeaveRequests('approved')">Approved</button>
+          <button class="btn btn-outline btn-sm" onclick="loadLeaveRequests('rejected')">Rejected</button>
+        </div>
+      </div>
+      <div class="card" id="leaveTableWrap"></div>`;
+    renderLeaveTable(list);
+  } catch(e) {
+    c.innerHTML = `<div class="alert alert-warning">Error: ${escHtml(e.message)}</div>`;
+  }
+}
+async function loadLeaveRequests(status) {
+  try {
+    const res = await API.get(`/leave?status=${status}&limit=200`);
+    renderLeaveTable(res.requests || []);
+  } catch(e) { toast(e.message,'error'); }
+}
+function renderLeaveTable(list) {
+  const wrap = document.getElementById('leaveTableWrap');
+  if (!wrap) return;
+  wrap.innerHTML = !list.length
+    ? '<div class="empty-state"><i class="fa-solid fa-calendar"></i><p>Nothing here.</p></div>'
+    : `<div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Student</th><th>Type</th><th>From</th><th>To</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+        <tbody>${list.map(r => `<tr>
+          <td><code>${escHtml(r.student_id)}</code></td>
+          <td><span class="badge ${r.leave_type==='od'?'bg-blue':'bg-orange'}">${escHtml((r.leave_type||'').toUpperCase())}</span></td>
+          <td style="font-size:.82rem;">${new Date(r.from_date).toLocaleDateString('en-IN')}</td>
+          <td style="font-size:.82rem;">${new Date(r.to_date).toLocaleDateString('en-IN')}</td>
+          <td style="font-size:.85rem;max-width:260px;">${escHtml(r.reason)}</td>
+          <td><span class="badge ${r.status==='approved'?'bg-green':r.status==='rejected'?'bg-red':'bg-orange'}">${escHtml(r.status)}</span></td>
+          <td>${r.status==='pending' ? `
+            <button class="btn btn-success btn-sm" onclick="reviewLeave(${r.id},'approved')"><i class="fa-solid fa-check"></i></button>
+            <button class="btn btn-danger btn-sm" onclick="reviewLeave(${r.id},'rejected')"><i class="fa-solid fa-xmark"></i></button>
+          ` : (r.review_note ? `<span style="font-size:.78rem;color:var(--muted);">${escHtml(r.review_note)}</span>` : '')}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+}
+async function reviewLeave(id, status) {
+  const note = status === 'rejected' ? (prompt('Optional note for the student:') || '') : '';
+  try {
+    await API.patch(`/leave/${id}`, { status, review_note: note || null });
+    toast(`Request ${status}.`,'success');
+    loadLeaveRequests('pending');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ── Student side: submit + view own requests ──────────────────────────────
+async function renderStuLeave(c) {
+  c.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+  try {
+    const res = await API.get('/leave/mine');
+    const list = res.requests || [];
+    c.innerHTML = `
+      <div class="page-header"><h2><i class="fa-solid fa-calendar-check" style="color:var(--accent);"></i> Leave / OD</h2></div>
+      <div class="card" style="max-width:600px;margin-bottom:16px;">
+        <div class="section-title">Submit a request</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">From</label><input class="form-control" id="lv_from" type="date"></div>
+          <div class="form-group"><label class="form-label">To</label><input class="form-control" id="lv_to" type="date"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Type</label>
+          <select class="form-control form-select" id="lv_type"><option value="leave">Leave</option><option value="od">On-Duty (OD)</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Reason</label><textarea class="form-control" id="lv_reason" rows="3" placeholder="Reason for leave / OD"></textarea></div>
+        <button class="btn btn-primary" onclick="submitLeaveRequest()"><i class="fa-solid fa-paper-plane"></i> Submit Request</button>
+      </div>
+      <div class="card">
+        <div class="section-title">My requests</div>
+        ${!list.length ? '<div class="empty-state"><i class="fa-solid fa-calendar"></i><p>No requests yet.</p></div>' :
+          `<div class="tbl-wrap"><table class="tbl">
+            <thead><tr><th>Type</th><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr></thead>
+            <tbody>${list.map(r => `<tr>
+              <td><span class="badge ${r.leave_type==='od'?'bg-blue':'bg-orange'}">${escHtml((r.leave_type||'').toUpperCase())}</span></td>
+              <td>${new Date(r.from_date).toLocaleDateString('en-IN')}</td>
+              <td>${new Date(r.to_date).toLocaleDateString('en-IN')}</td>
+              <td style="font-size:.85rem;">${escHtml(r.reason)}</td>
+              <td><span class="badge ${r.status==='approved'?'bg-green':r.status==='rejected'?'bg-red':'bg-orange'}">${escHtml(r.status)}</span></td>
+            </tr>`).join('')}</tbody>
+          </table></div>`}
+      </div>`;
+  } catch(e) {
+    c.innerHTML = `<div class="alert alert-warning">Error: ${escHtml(e.message)}</div>`;
+  }
+}
+async function submitLeaveRequest() {
+  const from   = document.getElementById('lv_from')?.value;
+  const to     = document.getElementById('lv_to')?.value;
+  const type   = document.getElementById('lv_type')?.value;
+  const reason = document.getElementById('lv_reason')?.value?.trim();
+  if (!from || !to) { toast('Pick a from and to date.','error'); return; }
+  if (!reason) { toast('Please enter a reason.','error'); return; }
+  try {
+    await API.post('/leave', {
+      from_date: new Date(from).toISOString(),
+      to_date:   new Date(to).toISOString(),
+      leave_type: type, reason,
+    });
+    toast('Request submitted.','success');
+    stuNav('leave');
+  } catch(e) { toast(e.message||'Failed to submit request','error'); }
 }
 
 /* ==============================================================
    BULK APPROVE - with confirmation dialog
 ============================================================== */
-async function approveAll() {
-  const data = await API.get('/users?status=pending&limit=500').catch(()=>({users:[]}));
-  const pending = data.users || [];
-  if (!pending.length) { toast('No pending users to approve','info'); return; }
-
-  var confirmMsg = 'Approve ALL ' + pending.length + ' pending student' + (pending.length!==1?'s':'') + '?\n\n';
-  confirmMsg += pending.slice(0,5).map(function(u){ return '- ' + u.full_name + ' (' + u.inst_id + ')'; }).join('\n');
-  if (pending.length > 5) confirmMsg += '\n...and ' + (pending.length-5) + ' more';
-  const confirmed = confirm(confirmMsg);
-  if (!confirmed) return;
-
-  let approved = 0;
-  for (const u of pending) {
-    try {
-      await API.patch(`/users/${u.inst_id}/status`, { status: 'active' });
-      approved++;
-    } catch {}
-  }
-  logAudit('BULK APPROVE', `Approved ${approved} pending students`);
-  toast(` Approved ${approved} student${approved!==1?'s':''}!`, 'success');
-  updatePendingBadge();
-  await renderPending(document.getElementById('adminContent'));
-}
-
 /* ==============================================================
    PWA - Install App
 ============================================================== */
@@ -2267,6 +2417,7 @@ function openForgotPassword() {
 
 function doLogout() {
   if (qrInterval)    { clearInterval(qrInterval); qrInterval = null; }
+  if (qrLivePollTimer) { clearInterval(qrLivePollTimer); qrLivePollTimer = null; }
   if (camStream)     { camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
   if (qrScanInterval){ clearInterval(qrScanInterval); qrScanInterval = null; }
   if (qrScanStream)  { qrScanStream.getTracks().forEach(t=>t.stop()); qrScanStream = null; }
@@ -2301,6 +2452,8 @@ async function adminNav(section) {
     sessions:  renderAllSessions,
     reports:    renderReports,
     defaulters: renderDefaulters,
+    flags:      renderFlagsPanel,
+    leave:      renderLeavePanel,
     promote:    renderPromotePage,
     audit:      renderAuditLog,
     settings:   renderSettingsPage,
@@ -2930,10 +3083,31 @@ async function deleteAndRefresh(id, name) {
   await renderPending(document.getElementById('adminContent'));
 }
 async function approveAll() {
+  /* BUG FIX: there used to be two approveAll() definitions in this file.
+     The one that won (defined later) had NO confirmation dialog — one
+     stray click irreversibly approved every pending registration — and
+     it reported "N users approved!" using the number of pending users
+     rather than the number that actually succeeded, because each failure
+     was swallowed by .catch(()=>{}). This merges the safer version's
+     confirm + real success counting with the faster parallel requests. */
   const data = await API.get('/users?status=pending&limit=500').catch(()=>({users:[]}));
-  const pending = data.users||[];
-  await Promise.all(pending.map(u => API.patch(`/users/${u.inst_id}/status`,{status:'active'}).catch(()=>{})));
-  toast(`${pending.length} users approved!`,'success');
+  const pending = data.users || [];
+  if (!pending.length) { toast('No pending users to approve','info'); return; }
+
+  let msg = `Approve ALL ${pending.length} pending user${pending.length!==1?'s':''}?\n\n`;
+  msg += pending.slice(0,5).map(u => `- ${u.full_name} (${u.inst_id})`).join('\n');
+  if (pending.length > 5) msg += `\n...and ${pending.length-5} more`;
+  if (!confirm(msg)) return;
+
+  const results = await Promise.all(pending.map(u =>
+    API.patch(`/users/${u.inst_id}/status`, { status:'active' })
+       .then(()=>true).catch(()=>false)
+  ));
+  const ok = results.filter(Boolean).length;
+  const failed = results.length - ok;
+  logAudit('BULK APPROVE', `Approved ${ok} pending user${ok!==1?'s':''}${failed?` (${failed} failed)`:''}`);
+  if (failed) toast(`${ok} approved, ${failed} failed. Try the failed ones again.`, 'warning');
+  else        toast(`${ok} user${ok!==1?'s':''} approved!`, 'success');
   updatePendingBadge();
   await renderPending(document.getElementById('adminContent'));
 }
@@ -3876,15 +4050,6 @@ async function openAddSlotModal() {
 
 
 
-async function deleteSlot(id) {
-  if (!confirm('Remove this slot from the timetable?')) return;
-  try {
-    await API.delete(`/timetable/${id}`);
-    toast('Slot removed','warning');
-    await renderTimetable(document.getElementById('adminContent'));
-  } catch(e) { toast(e.message,'error'); }
-}
-
 /* ============================================================== */
 
 async function renderAllSessions(c) {
@@ -3924,12 +4089,15 @@ async function renderAllSessions(c) {
 }
 
 async function renderReports(c) {
-  const [users, sessions] = await Promise.all([
+  const [users, sessions, courses] = await Promise.all([
     API.get('/users?role=student&limit=500').catch(()=>({users:[]})),
-    API.get('/sessions?limit=200').catch(()=>({sessions:[]})),
+    API.get('/sessions?limit=500').catch(()=>({sessions:[]})),
+    API.get('/courses').catch(()=>[]),
   ]);
   const students = users.users||[];
-  const closed   = (sessions.sessions||[]).filter(s=>s.status==='closed');
+  const closedAll = (sessions.sessions||[]).filter(s=>s.status==='closed');
+  const courseOpts = (Array.isArray(courses)?courses:[]).map(co => `<option value="${escHtml(co.id)}">${escHtml(co.name)} (${escHtml(co.code)})</option>`).join('');
+  const now = new Date();
   c.innerHTML = `
     <div class="page-header">
         <h2><i class="fa-solid fa-chart-bar" style="color:var(--accent);"></i> Attendance Reports</h2>
@@ -3939,8 +4107,24 @@ async function renderReports(c) {
           <button class="btn btn-primary btn-sm" onclick="showSectionInsights('','')"><i class="fa-solid fa-brain"></i> AI Insights</button>
         </div>
       </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="section-title"><i class="fa-solid fa-file-excel"></i> Monthly Excel Report</div>
+      <div class="form-row" style="align-items:flex-end;">
+        <div class="form-group"><label class="form-label">Year</label><input class="form-control" id="rep_year" type="number" value="${now.getFullYear()}" style="max-width:110px;"></div>
+        <div class="form-group"><label class="form-label">Month</label>
+          <select class="form-control form-select" id="rep_month" style="max-width:150px;">
+            ${['January','February','March','April','May','June','July','August','September','October','November','December']
+              .map((m,i)=>`<option value="${i+1}" ${i+1===now.getMonth()+1?'selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="flex:2;"><label class="form-label">Course (optional — leave blank for all)</label>
+          <select class="form-control form-select" id="rep_course"><option value="">All courses</option>${courseOpts}</select>
+        </div>
+        <div class="form-group" style="max-width:170px;"><button class="btn btn-primary" style="width:100%;" onclick="downloadMonthlyReport()"><i class="fa-solid fa-download"></i> Download .xlsx</button></div>
+      </div>
+    </div>
     <div class="card">
-      <div class="section-title">Student-wise Attendance (${closed.length} closed sessions)</div>
+      <div class="section-title">Student-wise Attendance (rough overview — own branch/section only, ${closedAll.length} total closed sessions system-wide)</div>
       ${!students.length ? '<div class="empty-state"><i class="fa-solid fa-users-slash"></i><p>No students</p></div>' :
         `<div class="tbl-wrap"><table class="tbl">
           <thead><tr><th>Student</th><th>Enrollment No.</th><th>Department</th><th>Attendance %</th></tr></thead>
@@ -3949,21 +4133,56 @@ async function renderReports(c) {
     </div>`;
   if (students.length) {
     const tbody = document.getElementById('reportTbody');
+    // BUG FIX: this used to compare a student's ALL-TIME attendance
+    // (every course/branch/section they were ever in) against
+    // closed.length — the count of closed sessions across the ENTIRE
+    // system, every branch, every course. In any school running more
+    // than one class, this made the percentage meaningless (and usually
+    // far too low). Scoped to sessions matching the student's own
+    // branch+section, same fix as the backend's section_insights and the
+    // new /attendance/defaulters endpoint. Still a rough overview, not
+    // per-course — use the Excel download above for the authoritative
+    // per-course figures faculty actually submit.
     const rows = await Promise.all(students.map(async stu => {
       try {
         const att = await API.get(`/attendance/student/${stu.inst_id}?limit=500`);
-        const present = (att.records||[]).filter(a=>a.status==='present').length;
-        const p = pct(present, closed.length);
+        const branch  = (stu.branch||stu.department||'').toLowerCase();
+        const section = (stu.section||'').toLowerCase();
+        const ownClosed = closedAll.filter(s => (s.branch||'').toLowerCase()===branch && (s.section||'').toLowerCase()===section);
+        const ownIds = new Set(ownClosed.map(s=>s.id));
+        const present = (att.records||[]).filter(a=>a.status==='present' && ownIds.has(a.session_id)).length;
+        const p = pct(present, ownClosed.length);
         return `<tr>
           <td><strong>${escHtml(stu.full_name)}</strong></td>
           <td><code>${escHtml(stu.inst_id)}</code></td>
-          <td>${stu.department||'-'}</td>
+          <td>${escHtml(stu.department||'-')}</td>
           <td style="min-width:160px;">${pctBar(p)}</td>
         </tr>`;
       } catch { return `<tr><td><strong>${escHtml(stu.full_name)}</strong></td><td><code>${escHtml(stu.inst_id)}</code></td><td>${escHtml(stu.department||'-')}</td><td>N/A</td></tr>`; }
     }));
     if (tbody) tbody.innerHTML = rows.join('');
   }
+}
+
+async function downloadMonthlyReport() {
+  const year   = document.getElementById('rep_year')?.value;
+  const month  = document.getElementById('rep_month')?.value;
+  const course = document.getElementById('rep_course')?.value;
+  try {
+    const qs = new URLSearchParams({ year, month });
+    if (course) qs.set('course_id', course);
+    const res = await fetch(`${API.base}/attendance/report/monthly?${qs.toString()}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('sas_token')}` }
+    });
+    if (!res.ok) { const j = await res.json().catch(()=>({})); throw new Error(j.detail || `Error ${res.status}`); }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `attendance_report_${year}_${String(month).padStart(2,'0')}.xlsx`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast('Report downloaded.','success');
+  } catch(e) { toast(e.message||'Failed to download report','error'); }
 }
 
 async function renderSettingsPage(c) {
@@ -4183,6 +4402,10 @@ async function facNav(section) {
     qr:         renderFacQR,
     attendance: renderFacAttendance,
     students:   renderFacStudents,
+    defaulters: renderDefaulters,
+    flags:      renderFlagsPanel,
+    leave:      renderLeavePanel,
+    reports:    renderReports,
     profile:    (c) => renderProfile(c, currentUser),
   };
   if (renders[section]) await renders[section](c);
@@ -4789,8 +5012,32 @@ async function renderFacQR(c) {
         <button class="btn btn-danger" style="width:100%;margin-top:16px;justify-content:center;" onclick="endFacSession(${active.id})"><i class="fa-solid fa-stop"></i> End Session</button>
       </div>
     </div>`;
-  generateQRCode(active.qr_token);
-  startQRTimer(expirySec, active.id);
+  // NEW: was generateQRCode(active.qr_token) — the raw static token. The
+  // server now masks qr_token for anyone but the owning faculty/admin (a
+  // pre-existing leak — students could previously read it straight out of
+  // GET /sessions/active with no scanning involved at all) and QR content
+  // rotates server-side, so this fetches the live rotating payload instead.
+  startQRLivePolling(active.id);
+}
+
+let qrLivePollTimer = null;
+async function startQRLivePolling(sessionId) {
+  if (qrLivePollTimer) clearInterval(qrLivePollTimer);
+  const poll = async () => {
+    try {
+      const live = await API.get(`/sessions/${sessionId}/qr-live`);
+      generateQRCode(live.qr_payload);
+      startQRTimer(live.seconds_remaining, live.rotates_every, sessionId);
+    } catch (e) {
+      // Session likely ended — stop polling rather than spam errors.
+      clearInterval(qrLivePollTimer);
+    }
+  };
+  await poll();
+  // Poll well inside the rotation window (every 5s, or half the window
+  // for very short custom windows) so the displayed code is always safely
+  // inside the server's current-or-previous-bucket acceptance window.
+  qrLivePollTimer = setInterval(poll, 5000);
 }
 
 function generateQRCode(token) {
@@ -4800,13 +5047,18 @@ function generateQRCode(token) {
   try {
     new QRCode(wrap, { text: token, width:200, height:200, colorDark:'#1a3c6e', colorLight:'#ffffff' });
   } catch {
-    wrap.innerHTML = `<div style="width:200px;height:200px;background:var(--bg);display:flex;align-items:center;justify-content:center;border-radius:8px;border:2px dashed var(--border);font-size:.85rem;padding:12px;text-align:center;word-break:break-all;"><code>${token}</code></div>`;
+    wrap.innerHTML = `<div style="width:200px;height:200px;background:var(--bg);display:flex;align-items:center;justify-content:center;border-radius:8px;border:2px dashed var(--border);font-size:.85rem;padding:12px;text-align:center;word-break:break-all;"><code>${escHtml(token)}</code></div>`;
   }
 }
 
-function startQRTimer(totalSecs, sessionId) {
+// NEW: countdown now reflects the server-computed rotation window
+// (SystemSettings.qr_expiry) instead of a client-guessed value, and no
+// longer calls /refresh-qr every cycle — that endpoint now means "force
+// a full reset because I suspect this code was shared", triggered
+// separately from the automatic rotation which is handled server-side.
+function startQRTimer(secondsRemaining, rotatesEvery, sessionId) {
   if (qrInterval) clearInterval(qrInterval);
-  let remaining = totalSecs;
+  let remaining = secondsRemaining;
   const update = () => {
     const el = document.getElementById('qrCountdown');
     if (!el) { clearInterval(qrInterval); return; }
@@ -4815,21 +5067,20 @@ function startQRTimer(totalSecs, sessionId) {
     if (remaining <= 10) el.style.color = 'var(--accent2)';
     else if (remaining <= 20) el.style.color = 'var(--accent)';
     else el.style.color = 'var(--success)';
-    if (remaining <= 0) { refreshQRFac(sessionId); remaining = totalSecs; }
-    remaining--;
+    remaining = Math.max(remaining - 1, 0);
   };
   update();
   qrInterval = setInterval(update, 1000);
 }
 
+// Manual "I think this code leaked" reset — rotates the underlying seed,
+// invalidating every code derived from the old one immediately, not just
+// waiting for the next automatic rotation window.
 async function refreshQRFac(sessionId) {
   try {
-    const s = await API.post(`/sessions/${sessionId}/refresh-qr`);
-    const wrap = document.getElementById('qrDisplay');
-    if (wrap) generateQRCode(s.qr_token);
-    const tokenEl = document.getElementById('qrTokenText');
-    if (tokenEl) tokenEl.textContent = s.qr_token;
-    toast('QR refreshed!','success');
+    await API.post(`/sessions/${sessionId}/refresh-qr`);
+    await startQRLivePolling(sessionId);
+    toast('QR code reset — old codes are now invalid.','success');
   } catch(e) { toast(e.message,'error'); }
 }
 
@@ -5017,6 +5268,7 @@ async function stuNav(section) {
     timetable: renderStuTimetable,
     scan:      renderStuScan,
     history:   renderStuHistory,
+    leave:     renderStuLeave,
     profile:   (c) => renderProfile(c, currentUser),
   };
   if (renders[section]) await renders[section](c);
@@ -5657,11 +5909,21 @@ function scanQRFrame(video) {
     // Token can be either raw token or JSON-wrapped
     let token = scannedToken;
     try { const parsed = JSON.parse(scannedToken); token = parsed.token || scannedToken; } catch {}
-    if (token === active.qr_token) {
-      // Stop scanning
+    // BUG FIX: this used to compare the scanned token against
+    // active.qr_token — but the server now masks qr_token for students
+    // entirely (it used to be readable straight out of the active-session
+    // API response, which defeated "you must actually scan the code" as a
+    // control). The client can no longer pre-validate locally, and
+    // doesn't need to: the server is the real authority and validates the
+    // rotating token at submit time anyway (see markAttendanceFinal()).
+    // Any scanned string that looks like our QR format is accepted here;
+    // a wrong/stale/foreign code still gets rejected by the server with a
+    // clear error at the final submit step.
+    if (token && /^\d+:[a-f0-9]{6,}$/i.test(token)) {
       clearInterval(qrScanInterval); qrScanInterval = null;
       if (qrScanStream) { qrScanStream.getTracks().forEach(t=>t.stop()); qrScanStream = null; }
       stuScanState.qrDone = true;
+      stuScanState.scannedToken = token;
       markStep(1); unblockStep(2);
       toast(' QR code scanned!','success');
       const status = document.getElementById('qrScanStatus');
@@ -5670,7 +5932,7 @@ function scanQRFrame(video) {
       const scanline = document.getElementById('qrScanline');
       if (scanline) scanline.style.display = 'none';
     } else {
-      // Wrong QR - show briefly but keep scanning
+      // Doesn't look like our QR format - show briefly but keep scanning
       const status = document.getElementById('qrScanStatus');
       if (status) {
         status.innerHTML = '<i class="fa-solid fa-xmark-circle" style="color:var(--accent2);"></i> Wrong QR - keep scanning...';
@@ -5867,7 +6129,16 @@ async function captureFace() {
       if (btn) { btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-circle-dot"></i> Capture & Verify'; }
       return;
     }
-    // Passed!
+    // Passed! Keep the raw descriptor (as a plain array — Float32Array
+    // doesn't survive JSON.stringify) so the server can verify it too.
+    // BUG FIX/NEW FEATURE: face matching used to happen ENTIRELY here in
+    // the browser — the server just trusted whatever this function
+    // decided. Now this client-side check stays (fast feedback, avoids a
+    // round-trip for an obviously-wrong face), but the server
+    // independently re-verifies the same descriptor before recording
+    // attendance, so calling the API directly with no camera can't skip
+    // the check anymore.
+    stuScanState.faceDescriptor = Array.from(liveDescriptor);
     if (camStream) { camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
     stuScanState.faceDone = true;
     markStep(3);
@@ -5881,19 +6152,90 @@ async function captureFace() {
 }
 
 function skipFace() {
+  stuScanState.faceDescriptor = null;
   stuScanState.faceDone = true;
   markStep(3);
   doMarkAttendance();
 }
 
+// NEW: a client-generated, localStorage-persisted random id — NOT a
+// hardware fingerprint, just enough for the server's proxy-detection
+// heuristics to notice "the same browser just marked several different
+// students in one session" (classic pass-the-phone-around pattern).
+function getDeviceId() {
+  let id = localStorage.getItem('sas_device_id');
+  if (!id) {
+    id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try { localStorage.setItem('sas_device_id', id); } catch {}
+  }
+  return id;
+}
+
+// NEW: offline marking queue. Classroom wifi is unreliable — if the POST
+// fails because the network itself is down (not because the server
+// rejected the request), the attempt is saved and retried automatically
+// once connectivity returns. Note the honest limit: the QR payload is
+// time-windowed (rotates every ~45s by default), so this only helps for
+// brief drops — a device offline for several minutes will reconnect to
+// find its queued code has expired, and that attempt is then dropped
+// with the same "QR expired" message a fresh scan would give, rather
+// than silently retrying forever.
+const OFFLINE_QUEUE_KEY = 'sas_offline_attendance_queue';
+function getOfflineQueue() { try { return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]'); } catch { return []; } }
+function setOfflineQueue(q) { try { localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(q)); } catch {} }
+function queueOfflineAttendance(payload) {
+  const q = getOfflineQueue();
+  q.push({ payload, queued_at: Date.now() });
+  setOfflineQueue(q);
+  updateOfflineBadge();
+}
+function updateOfflineBadge() {
+  const n = getOfflineQueue().length;
+  const el = document.getElementById('offlineQueueBadge');
+  if (el) el.textContent = n > 0 ? `${n} pending sync` : '';
+  if (el) el.style.display = n > 0 ? 'inline-flex' : 'none';
+}
+async function flushOfflineQueue() {
+  const q = getOfflineQueue();
+  if (!q.length) return;
+  let synced = 0, dropped = 0;
+  const remaining = [];
+  for (const item of q) {
+    try {
+      await API.post('/attendance/qr-gps-face', item.payload);
+      synced++;
+    } catch (e) {
+      if (e instanceof TypeError) {
+        remaining.push(item); // still no network — keep for the next retry
+      } else {
+        dropped++; // server actually answered (expired QR, already marked, etc.) — nothing more to do
+      }
+    }
+  }
+  setOfflineQueue(remaining);
+  updateOfflineBadge();
+  if (synced) toast(`${synced} queued attendance submission(s) synced.`, 'success');
+  if (dropped) toast(`${dropped} queued submission(s) could not be completed (likely expired) and were dropped.`, 'warning');
+}
+window.addEventListener('online', flushOfflineQueue);
+setInterval(flushOfflineQueue, 30000);
+document.addEventListener('DOMContentLoaded', updateOfflineBadge);
+
 async function doMarkAttendance() {
   if (!stuScanState.qrDone||!stuScanState.gpsDone||!stuScanState.faceDone) return;
+  // BUG FIX: this used to send stuScanState.activeSession.qr_token — the
+  // server now masks that field for students (see startQRLivePolling /
+  // sessions.py), so it would always be null. The actual scanned payload
+  // (captured in scanQRFrame) is what the server verifies now.
+  const payload = {
+    qr_token:        stuScanState.scannedToken,
+    student_lat:      stuScanState.stuLat || null,
+    student_lng:      stuScanState.stuLng || null,
+    face_descriptor:  stuScanState.faceDescriptor || null,
+    device_id:        getDeviceId(),
+  };
   try {
-    await API.post('/attendance/qr-gps-face', {
-      qr_token:    stuScanState.activeSession.qr_token,
-      student_lat: stuScanState.stuLat || null,
-      student_lng: stuScanState.stuLng || null,
-    });
+    await API.post('/attendance/qr-gps-face', payload);
     const result = document.getElementById('markResult');
     if (result) {
       result.innerHTML = `
@@ -5910,7 +6252,27 @@ async function doMarkAttendance() {
     document.getElementById('scanFlow')?.remove();
     toast(' Attendance marked successfully!','success');
   } catch(e) {
-    toast(e.message||'Failed to mark attendance','error');
+    // NEW: offline queue — a real network failure (not a server
+    // rejection) gets saved and retried automatically. See
+    // queueOfflineAttendance()'s docstring for the honest limitation
+    // around the QR's rotation window.
+    if (e instanceof TypeError) {
+      queueOfflineAttendance(payload);
+      const result = document.getElementById('markResult');
+      if (result) {
+        result.innerHTML = `
+          <div class="card" style="max-width:440px;margin:20px auto 0;text-align:center;padding:36px 24px;border:1.5px solid var(--accent);">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size:2.4rem;color:var(--accent);"></i>
+            <div style="font-size:1.15rem;font-weight:800;margin-top:12px;">No connection — saved to submit automatically</div>
+            <div style="color:var(--muted);margin-top:8px;font-size:.9rem;">This will sync as soon as your connection returns. If it takes more than a minute or two, please ask faculty to refresh the QR and try again.</div>
+            <button class="btn btn-primary" style="margin-top:18px;" onclick="stuNav('dashboard')"><i class="fa-solid fa-house"></i> Back to Dashboard</button>
+          </div>`;
+      }
+      document.getElementById('scanFlow')?.remove();
+      toast('Offline — attendance queued and will sync automatically.','warning');
+    } else {
+      toast(e.message||'Failed to mark attendance','error');
+    }
   }
 }
 
