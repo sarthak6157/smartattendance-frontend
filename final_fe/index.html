@@ -917,7 +917,7 @@ button, input, select, textarea { font-family: inherit; }
       <i class="fa-solid fa-right-to-bracket"></i> Login
     </button>
     <div style="text-align:center;margin-top:16px;font-size:.85rem;color:var(--muted);">
-      Don't have an account? <a href="#" onclick="showPage('registerPage')" style="color:var(--primary);font-weight:600;">Register here</a>
+      Don't have an account? Contact your administrator to get registered.
       &nbsp;·&nbsp;
       <a href="#" onclick="openForgotPassword()" style="color:var(--muted);font-size:.82rem;">Forgot password?</a>
     </div>
@@ -925,121 +925,8 @@ button, input, select, textarea { font-family: inherit; }
   </div>
 </div>
 
-<!-- ═══════════════ REGISTER ═══════════════ -->
-<div id="registerPage" class="page" style="background:linear-gradient(135deg,#0f1e3d,#1a3c6e);align-items:center;justify-content:center;padding:16px;">
-  <div style="background:#fff;border-radius:20px;padding:32px 28px;width:100%;max-width:540px;box-shadow:0 24px 80px #00000044;max-height:95vh;overflow-y:auto;">
-    <div style="text-align:center;margin-bottom:22px;">
-      <div style="width:50px;height:50px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 10px;color:#fff;"><i class="fa-solid fa-user-plus"></i></div>
-      <div style="font-size:1.2rem;font-weight:800;color:var(--primary);">Student Registration</div>
-      <div style="font-size:.82rem;color:var(--muted);">Teerthanker Mahaveer University · Await admin approval after registering</div>
-    </div>
-
-    <!-- Personal Info -->
-    <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:14px;">
-      <div style="font-size:.78rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;"><i class="fa-solid fa-user"></i> Personal Information</div>
-      <div class="form-row">
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">Full Name *</label>
-          <input class="form-control" id="regName" placeholder="Your full name">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">Enrollment No. *</label>
-          <input class="form-control" id="regEnroll" placeholder="e.g. 2300123456">
-        </div>
-      </div>
-      <div class="form-group" style="margin-top:10px;margin-bottom:0;">
-        <label class="form-label">Email Address *</label>
-        <input class="form-control" id="regEmail" type="email" placeholder="your@email.com or your@tmu.ac.in">
-      </div>
-    </div>
-     <!-- Course / Branch / Section -->
-     <div style="background:#f0f7ff;border-radius:10px;padding:14px;margin-bottom:14px;border:1.5px solid #dbeafe;">
-       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-         <div style="font-size:.78rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;"><i class="fa-solid fa-graduation-cap"></i> Academic Details</div>
-         <span style="font-size:.73rem;color:var(--muted);font-weight:400;">(optional — can fill later)</span>
-       </div>
-
-       <!-- College -->
-       <div class="form-group">
-         <label class="form-label">College</label>
-         <select class="form-control form-select" id="regCollege">
-           <option value="">— Select College (optional) —</option>
-         </select>
-       </div>
-
-       <!-- Course -->
-       <div class="form-group">
-         <label class="form-label">Course / Program</label>
-         <select class="form-control form-select" id="regCourse" onchange="updateBranches()">
-           <option value="">— Select Programme —</option>
-         </select>
-       </div>
-
-       <!-- Branch — dropdown + add new -->
-       <div class="form-group" id="branchGroup" style="display:none;">
-         <label class="form-label">Branch / Specialization</label>
-         <select class="form-control form-select" id="regBranch" onchange="handleRegBranchSelect()">
-           <option value="">— Select Branch (optional) —</option>
-         </select>
-         <div id="regBranchCustomWrap" style="display:none;margin-top:8px;">
-           <input class="form-control" id="regBranchCustom"
-             placeholder="Type new branch name e.g. Artificial Intelligence"
-             style="border:1.5px solid var(--accent);">
-           <small style="color:var(--accent);font-size:.73rem;margin-top:3px;display:block;">
-             <i class="fa-solid fa-plus-circle"></i> This new branch will be added automatically
-           </small>
-         </div>
-       </div>
-
-       <!-- Section (free text) + Semester -->
-       <div class="form-row" id="semGroup" style="display:none;margin-bottom:0;">
-         <div class="form-group" style="margin-bottom:0;">
-           <label class="form-label">Section <small style="color:var(--muted);font-weight:400;">(optional)</small></label>
-           <input class="form-control" id="regSection" placeholder="e.g. A or B or leave blank" maxlength="10">
-           <small style="color:var(--muted);font-size:.72rem;">Type freely — A, B, C, or any name</small>
-         </div>
-         <div class="form-group" style="margin-bottom:0;">
-           <label class="form-label">Semester <small style="color:var(--muted);font-weight:400;">(optional)</small></label>
-           <select class="form-control form-select" id="regSem">
-             <option value="">— Optional —</option>
-             <option value="1st">1st Semester</option>
-             <option value="2nd">2nd Semester</option>
-             <option value="3rd">3rd Semester</option>
-             <option value="4th">4th Semester</option>
-             <option value="5th">5th Semester</option>
-             <option value="6th">6th Semester</option>
-             <option value="7th">7th Semester</option>
-             <option value="8th">8th Semester</option>
-           </select>
-         </div>
-       </div>
-     </div>
-    </div>
-
-    <!-- Password -->
-    <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:16px;">
-      <div style="font-size:.78rem;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;"><i class="fa-solid fa-lock"></i> Set Password</div>
-      <div class="form-row">
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">Password *</label>
-          <input class="form-control" id="regPass" type="password" placeholder="Min 6 characters">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">Confirm Password *</label>
-          <input class="form-control" id="regPass2" type="password" placeholder="Repeat password">
-        </div>
-      </div>
-    </div>
-
-    <button class="btn btn-accent" style="width:100%;justify-content:center;padding:12px;font-size:.95rem;" id="regBtn" onclick="doRegister()">
-      <i class="fa-solid fa-user-plus"></i> Register Account
-    </button>
-    <div style="text-align:center;margin-top:12px;font-size:.83rem;color:var(--muted);">
-      Already registered? <a href="#" onclick="showPage('loginPage')" style="color:var(--primary);font-weight:600;">Login here</a>
-    </div>
-  </div>
-</div>
-
+<!-- Public self-registration page removed — accounts are admin-created only.
+     See the comment above openForgotPassword() for what was removed. -->
 <!-- ═══════════════ ADMIN PAGE ═══════════════ -->
 <div id="adminPage" class="page">
   <div class="navbar">
@@ -1077,7 +964,7 @@ button, input, select, textarea { font-family: inherit; }
         <a href="#" onclick="adminNav('reports')" id="anav-reports"><i class="fa-solid fa-chart-bar"></i> Attendance Reports</a>
         <a href="#" onclick="adminNav('defaulters')" id="anav-defaulters"><i class="fa-solid fa-triangle-exclamation" style="color:#e63946;"></i> Defaulter List</a>
         <a href="#" onclick="adminNav('flags')" id="anav-flags"><i class="fa-solid fa-flag"></i> Proxy Alerts</a>
-        <a href="#" onclick="adminNav('leave')" id="anav-leave"><i class="fa-solid fa-calendar-check"></i> Leave / OD Requests</a>
+        <a href="#" onclick="adminNav('leave')" id="anav-leave"><i class="fa-solid fa-calendar-check"></i> Leave Requests</a>
         <a href="#" onclick="adminNav('promote')" id="anav-promote"><i class="fa-solid fa-arrow-up-right-dots" style="color:#2d9e6b;"></i> Promote Students</a>
         <a href="#" onclick="adminNav('audit')" id="anav-audit"><i class="fa-solid fa-scroll"></i> Audit Log</a>
         <div class="nav-section">System</div>
@@ -1123,7 +1010,7 @@ button, input, select, textarea { font-family: inherit; }
         <a href="#" onclick="facNav('students')" id="fnav-students"><i class="fa-solid fa-user-graduate"></i> My Students</a>
         <a href="#" onclick="facNav('defaulters')" id="fnav-defaulters"><i class="fa-solid fa-triangle-exclamation"></i> Defaulters</a>
         <a href="#" onclick="facNav('flags')" id="fnav-flags"><i class="fa-solid fa-flag"></i> Proxy Alerts</a>
-        <a href="#" onclick="facNav('leave')" id="fnav-leave"><i class="fa-solid fa-calendar-check"></i> Leave / OD Requests</a>
+        <a href="#" onclick="facNav('leave')" id="fnav-leave"><i class="fa-solid fa-calendar-check"></i> Leave Requests</a>
         <a href="#" onclick="facNav('reports')" id="fnav-reports"><i class="fa-solid fa-file-excel"></i> Monthly Report</a>
         <div class="nav-section">Account</div>
         <a href="#" onclick="facNav('profile')" id="fnav-profile"><i class="fa-solid fa-user-circle"></i> My Profile</a>
@@ -1164,7 +1051,7 @@ button, input, select, textarea { font-family: inherit; }
         <a href="#" onclick="stuNav('timetable')" id="snav-timetable"><i class="fa-solid fa-calendar-days"></i> My Timetable</a>
         <a href="#" onclick="stuNav('scan')" id="snav-scan"><i class="fa-solid fa-qrcode"></i> Mark Attendance</a>
         <a href="#" onclick="stuNav('history')" id="snav-history"><i class="fa-solid fa-history"></i> Attendance History</a>
-        <a href="#" onclick="stuNav('leave')" id="snav-leave"><i class="fa-solid fa-calendar-check"></i> Leave / OD</a>
+        <a href="#" onclick="stuNav('leave')" id="snav-leave"><i class="fa-solid fa-calendar-check"></i> Leave</a>
         <div class="nav-section">Account</div>
         <a href="#" onclick="stuNav('profile')" id="snav-profile"><i class="fa-solid fa-user-circle"></i> My Profile</a>
       </nav>
@@ -1484,14 +1371,13 @@ function closeSidebar() {
 
 // Auto-close sidebar on mobile when a nav link is clicked
 document.addEventListener('DOMContentLoaded', () => {
-  // Populate TMU programme dropdown on registration page
-  populateRegCourse();
   document.querySelectorAll('.sidebar nav a').forEach(a => {
     a.addEventListener('click', () => {
       if (window.innerWidth <= 768) closeSidebar();
     });
   });
-  setupCollegeCascade('regCollege', 'regCourse', 'regBranch');
+  // Public self-registration removed — only admin-created accounts now
+  // (see users.js's "Add User" modal, mu_/mc_/ec_ cascades below).
   setupCollegeCascade('mu_college', 'mu_course', 'mu_branch');
   setupCollegeCascade('mc_college', 'mc_program', 'mc_branch_sel');
   setupCollegeCascade('ec_college', 'ec_course_prog', 'ec_branch');
@@ -1804,7 +1690,7 @@ async function renderLeavePanel(c) {
     const list = res.requests || [];
     c.innerHTML = `
       <div class="page-header">
-        <h2><i class="fa-solid fa-calendar-check" style="color:var(--accent);"></i> Leave / OD Requests
+        <h2><i class="fa-solid fa-calendar-check" style="color:var(--accent);"></i> Leave Requests
           <span class="badge bg-orange" style="margin-left:8px;">${list.length} pending</span>
         </h2>
         <div class="btn-group">
@@ -1831,10 +1717,9 @@ function renderLeaveTable(list) {
   wrap.innerHTML = !list.length
     ? '<div class="empty-state"><i class="fa-solid fa-calendar"></i><p>Nothing here.</p></div>'
     : `<div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th>Student</th><th>Type</th><th>From</th><th>To</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Student</th><th>From</th><th>To</th><th>Reason</th><th>Status</th><th></th></tr></thead>
         <tbody>${list.map(r => `<tr>
           <td><code>${escHtml(r.student_id)}</code></td>
-          <td><span class="badge ${r.leave_type==='od'?'bg-blue':'bg-orange'}">${escHtml((r.leave_type||'').toUpperCase())}</span></td>
           <td style="font-size:.82rem;">${new Date(r.from_date).toLocaleDateString('en-IN')}</td>
           <td style="font-size:.82rem;">${new Date(r.to_date).toLocaleDateString('en-IN')}</td>
           <td style="font-size:.85rem;max-width:260px;">${escHtml(r.reason)}</td>
@@ -1862,26 +1747,22 @@ async function renderStuLeave(c) {
     const res = await API.get('/leave/mine');
     const list = res.requests || [];
     c.innerHTML = `
-      <div class="page-header"><h2><i class="fa-solid fa-calendar-check" style="color:var(--accent);"></i> Leave / OD</h2></div>
+      <div class="page-header"><h2><i class="fa-solid fa-calendar-check" style="color:var(--accent);"></i> Leave</h2></div>
       <div class="card" style="max-width:600px;margin-bottom:16px;">
         <div class="section-title">Submit a request</div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">From</label><input class="form-control" id="lv_from" type="date"></div>
           <div class="form-group"><label class="form-label">To</label><input class="form-control" id="lv_to" type="date"></div>
         </div>
-        <div class="form-group"><label class="form-label">Type</label>
-          <select class="form-control form-select" id="lv_type"><option value="leave">Leave</option><option value="od">On-Duty (OD)</option></select>
-        </div>
-        <div class="form-group"><label class="form-label">Reason</label><textarea class="form-control" id="lv_reason" rows="3" placeholder="Reason for leave / OD"></textarea></div>
+        <div class="form-group"><label class="form-label">Reason</label><textarea class="form-control" id="lv_reason" rows="3" placeholder="Reason for leave"></textarea></div>
         <button class="btn btn-primary" onclick="submitLeaveRequest()"><i class="fa-solid fa-paper-plane"></i> Submit Request</button>
       </div>
       <div class="card">
         <div class="section-title">My requests</div>
         ${!list.length ? '<div class="empty-state"><i class="fa-solid fa-calendar"></i><p>No requests yet.</p></div>' :
           `<div class="tbl-wrap"><table class="tbl">
-            <thead><tr><th>Type</th><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr></thead>
+            <thead><tr><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr></thead>
             <tbody>${list.map(r => `<tr>
-              <td><span class="badge ${r.leave_type==='od'?'bg-blue':'bg-orange'}">${escHtml((r.leave_type||'').toUpperCase())}</span></td>
               <td>${new Date(r.from_date).toLocaleDateString('en-IN')}</td>
               <td>${new Date(r.to_date).toLocaleDateString('en-IN')}</td>
               <td style="font-size:.85rem;">${escHtml(r.reason)}</td>
@@ -1896,7 +1777,6 @@ async function renderStuLeave(c) {
 async function submitLeaveRequest() {
   const from   = document.getElementById('lv_from')?.value;
   const to     = document.getElementById('lv_to')?.value;
-  const type   = document.getElementById('lv_type')?.value;
   const reason = document.getElementById('lv_reason')?.value?.trim();
   if (!from || !to) { toast('Pick a from and to date.','error'); return; }
   if (!reason) { toast('Please enter a reason.','error'); return; }
@@ -1904,7 +1784,7 @@ async function submitLeaveRequest() {
     await API.post('/leave', {
       from_date: new Date(from).toISOString(),
       to_date:   new Date(to).toISOString(),
-      leave_type: type, reason,
+      leave_type: 'leave', reason,
     });
     toast('Request submitted.','success');
     stuNav('leave');
@@ -2303,113 +2183,14 @@ function getCascadeProgramValue(courseId) {
   return courseSel.value;
 }
 
-function populateRegCourse() {
-  const sel = document.getElementById('regCourse');
-  if (!sel) return;
-  const progs = Object.keys(BRANCH_MAP).sort();
-  sel.innerHTML = '<option value="">— Select Programme —</option>' +
-    progs.map(p => `<option value="${p}">${p}</option>`).join('');
-}
-
-function updateBranches() {
-  const course = document.getElementById('regCourse').value;
-  const branchSel = document.getElementById('regBranch');
-  const branchGroup = document.getElementById('branchGroup');
-  const secSemGroup = document.getElementById('secSemGroup');
-  const customWrap = document.getElementById('regBranchCustomWrap');
-
-  if (customWrap) customWrap.style.display = 'none';
-
-  if (!course) {
-    branchGroup.style.display = 'none';
-    secSemGroup.style.display = 'none';
-    return;
-  }
-
-  const known = BRANCH_MAP[course] || [];
-  branchSel.innerHTML =
-    '<option value="">- Select Branch (optional) -</option>' +
-    known.map(b => `<option value="${b}">${b}</option>`).join('') +
-    '<option value="__new__">+ Add new branch / specialization...</option>';
-
-  branchGroup.style.display = 'block';
-  secSemGroup.style.display = 'grid';
-  secSemGroup.style.gridTemplateColumns = '1fr 1fr';
-  secSemGroup.style.gap = '12px';
-}
-
-function handleRegBranchSelect() {
-  const sel = document.getElementById('regBranch');
-  const wrap = document.getElementById('regBranchCustomWrap');
-  const input = document.getElementById('regBranchCustom');
-  if (sel.value === '__new__') {
-    wrap.style.display = 'block';
-    if (input) input.focus();
-  } else {
-    wrap.style.display = 'none';
-  }
-}
-
-function getRegBranch() {
-  const sel = document.getElementById('regBranch');
-  if (sel.value === '__new__') {
-    const custom = (document.getElementById('regBranchCustom')?.value || '').trim();
-    // Save to BRANCH_MAP so it appears next time
-    const course = document.getElementById('regCourse').value;
-    if (custom && course && BRANCH_MAP[course] && !BRANCH_MAP[course].includes(custom)) {
-      BRANCH_MAP[course].push(custom);
-    }
-    return custom;
-  }
-  return sel.value;
-}
-
-async function doRegister() {
-  const name    = document.getElementById('regName').value.trim();
-  const enroll  = document.getElementById('regEnroll').value.trim();
-  const email   = document.getElementById('regEmail').value.trim();
-  const course  = document.getElementById('regCourse').value;
-  const branch  = getRegBranch();      // handles dropdown + custom text
-  const section = (document.getElementById('regSection')?.value || '').trim();
-  const sem     = document.getElementById('regSem').value;
-  const pass    = document.getElementById('regPass').value;
-  const pass2   = document.getElementById('regPass2').value;
-
-  if (!name)   { toast('Please enter your full name','warning'); return; }
-  if (!enroll) { toast('Please enter your enrollment number','warning'); return; }
-  if (!email)  { toast('Please enter your email','warning'); return; }
-  if (!pass)   { toast('Please set a password','warning'); return; }
-  // Academic fields are all optional - no mandatory check
-  // section and semester are optional
-  if (!pass)    { toast('Please set a password','warning'); return; }
-  if (pass !== pass2) { toast('Passwords do not match','error'); return; }
-  if (pass.length < 6){ toast('Password must be at least 6 characters','warning'); return; }
-
-  const btn = document.getElementById('regBtn');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Registering...';
-  try {
-    const dept = `${course} - ${branch}`;
-    await API.post('/auth/register', {
-      full_name: name,
-      inst_id:   enroll,
-      email,
-      password:  pass,
-      role:      'student',
-      department: dept,
-      branch:    `${course} - ${branch}`,
-      section,
-      semester:  sem,
-    });
-    toast(' Registered successfully! Await admin approval before you can login.','success');
-    showPage('loginPage');
-  } catch(e) {
-    toast(e.message || 'Registration failed','error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Register Account';
-  }
-}
-
+// Public self-registration removed — accounts are now created only via
+// the admin "Add User" modal (POST /api/users, admin-only). The
+// registration form, its populateRegCourse/updateBranches/
+// handleRegBranchSelect/getRegBranch/doRegister helpers, and the
+// registerPage HTML have all been removed together — none of them were
+// shared with the admin/faculty/course cascades (mu_/mc_/ec_ prefixes),
+// which have their own separate updateAdminBranches/updateCourseBranches/
+// updateEcBranches functions and are unaffected by this removal.
 
 function openForgotPassword() {
   toast('Please contact your administrator to reset your password.', 'warning');
