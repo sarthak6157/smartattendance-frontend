@@ -1011,6 +1011,7 @@ button, input, select, textarea { font-family: inherit; }
         <a href="#" onclick="facNav('defaulters')" id="fnav-defaulters"><i class="fa-solid fa-triangle-exclamation"></i> Defaulters</a>
         <a href="#" onclick="facNav('flags')" id="fnav-flags"><i class="fa-solid fa-flag"></i> Proxy Alerts</a>
         <a href="#" onclick="facNav('leave')" id="fnav-leave"><i class="fa-solid fa-calendar-check"></i> Leave Requests</a>
+        <a href="#" onclick="facNav('myleave')" id="fnav-myleave"><i class="fa-solid fa-calendar-day"></i> My Leave</a>
         <a href="#" onclick="facNav('reports')" id="fnav-reports"><i class="fa-solid fa-file-excel"></i> Monthly Report</a>
         <div class="nav-section">Account</div>
         <a href="#" onclick="facNav('profile')" id="fnav-profile"><i class="fa-solid fa-user-circle"></i> My Profile</a>
@@ -1280,6 +1281,17 @@ button, input, select, textarea { font-family: inherit; }
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('createSessionModal')">Cancel</button>
       <button class="btn btn-accent" id="saveSessionBtn" onclick="saveNewSession()"><i class="fa-solid fa-save"></i> Create Session</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SUBSTITUTE ASSIGNMENT MODAL ═══ -->
+<div class="modal-overlay" id="substituteModal">
+  <div class="modal-box" style="max-width:640px;">
+    <h3><i class="fa-solid fa-user-group" style="color:var(--accent);"></i> Assign Substitutes</h3>
+    <div id="substituteModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('substituteModal')">Close</button>
     </div>
   </div>
 </div>
@@ -1717,9 +1729,12 @@ function renderLeaveTable(list) {
   wrap.innerHTML = !list.length
     ? '<div class="empty-state"><i class="fa-solid fa-calendar"></i><p>Nothing here.</p></div>'
     : `<div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th>Student</th><th>From</th><th>To</th><th>Reason</th><th>Status</th><th></th></tr></thead>
-        <tbody>${list.map(r => `<tr>
-          <td><code>${escHtml(r.student_id)}</code></td>
+        <thead><tr><th>Requester</th><th>From</th><th>To</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+        <tbody>${list.map(r => {
+          const isFaculty = !!r.faculty_id;
+          const who = isFaculty ? r.faculty_id : r.student_id;
+          return `<tr>
+          <td><code>${escHtml(who)}</code> ${isFaculty ? '<span class="badge bg-blue" style="margin-left:4px;">faculty</span>' : ''}</td>
           <td style="font-size:.82rem;">${new Date(r.from_date).toLocaleDateString('en-IN')}</td>
           <td style="font-size:.82rem;">${new Date(r.to_date).toLocaleDateString('en-IN')}</td>
           <td style="font-size:.85rem;max-width:260px;">${escHtml(r.reason)}</td>
@@ -1727,8 +1742,10 @@ function renderLeaveTable(list) {
           <td>${r.status==='pending' ? `
             <button class="btn btn-success btn-sm" onclick="reviewLeave(${r.id},'approved')"><i class="fa-solid fa-check"></i></button>
             <button class="btn btn-danger btn-sm" onclick="reviewLeave(${r.id},'rejected')"><i class="fa-solid fa-xmark"></i></button>
-          ` : (r.review_note ? `<span style="font-size:.78rem;color:var(--muted);">${escHtml(r.review_note)}</span>` : '')}</td>
-        </tr>`).join('')}</tbody>
+          ` : (isFaculty && r.status==='approved' ? `
+            <button class="btn btn-outline btn-sm" onclick="openSubstituteModal(${r.id})"><i class="fa-solid fa-user-group"></i> Assign Substitute</button>
+          ` : (r.review_note ? `<span style="font-size:.78rem;color:var(--muted);">${escHtml(r.review_note)}</span>` : ''))}</td>
+        </tr>`;}).join('')}</tbody>
       </table></div>`;
 }
 async function reviewLeave(id, status) {
@@ -1740,7 +1757,91 @@ async function reviewLeave(id, status) {
   } catch(e) { toast(e.message,'error'); }
 }
 
-// ── Student side: submit + view own requests ──────────────────────────────
+// ── NEW: substitute assignment modal (admin only, approved faculty leave) ──
+async function openSubstituteModal(leaveId) {
+  try {
+    const data = await API.get(`/leave/${leaveId}/affected-classes`);
+    if (!data.classes.length) {
+      toast('No timetable slots fall within this leave\'s date range — nothing to cover.', 'info');
+      return;
+    }
+    const faculty = await API.get('/users?role=faculty&limit=500').catch(()=>({users:[]}));
+    const facOpts = (faculty.users||[])
+      .filter(f => f.inst_id !== data.faculty_id)
+      .map(f => `<option value="${escHtml(f.inst_id)}">${escHtml(f.full_name)} (${escHtml(f.inst_id)})</option>`).join('');
+
+    const rows = data.classes.map(cl => `
+      <tr data-slot="${cl.timetable_slot_id}" data-date="${cl.class_date}">
+        <td style="font-size:.82rem;">${escHtml(cl.day)} ${escHtml(cl.class_date)}</td>
+        <td style="font-size:.82rem;">${escHtml(cl.start_time)}\u2013${escHtml(cl.end_time)}</td>
+        <td style="font-size:.82rem;">${escHtml(cl.course_name)} \u00b7 ${escHtml(cl.section||'-')}</td>
+        <td>
+          ${cl.substitute_faculty_id
+            ? `<span class="badge bg-green">${escHtml(cl.substitute_faculty_id)}</span>`
+            : `<select class="form-control form-select" style="font-size:.8rem;padding:4px 8px;" data-sub-select>
+                <option value="">\u2014 pick substitute \u2014</option>${facOpts}
+              </select>`}
+        </td>
+      </tr>`).join('');
+
+    document.getElementById('substituteModalBody').innerHTML = `
+      <div class="alert alert-info" style="margin-bottom:10px;font-size:.82rem;">
+        <i class="fa-solid fa-circle-info"></i> Pick a substitute for each class below. The substitute starts it
+        themselves as an Extra Class on the day \u2014 nothing is scheduled automatically.
+      </div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Date</th><th>Time</th><th>Class</th><th>Substitute</th></tr></thead>
+        <tbody id="subAssignRows">${rows}</tbody>
+      </table></div>
+      <button class="btn btn-primary" style="margin-top:12px;" onclick="saveSubstituteAssignments(${leaveId})">
+        <i class="fa-solid fa-floppy-disk"></i> Save Assignments
+      </button>`;
+    openModal('substituteModal');
+  } catch(e) { toast(e.message||'Failed to load affected classes','error'); }
+}
+async function saveSubstituteAssignments(leaveId) {
+  const rows = document.querySelectorAll('#subAssignRows tr[data-slot]');
+  let saved = 0, failed = 0;
+  for (const row of rows) {
+    const sel = row.querySelector('[data-sub-select]');
+    if (!sel || !sel.value) continue;
+    try {
+      await API.post(`/leave/${leaveId}/assign-substitute`, {
+        timetable_slot_id: parseInt(row.dataset.slot, 10),
+        class_date: row.dataset.date,
+        substitute_faculty_id: sel.value,
+      });
+      saved++;
+    } catch { failed++; }
+  }
+  closeModal('substituteModal');
+  if (saved) toast(`${saved} substitute assignment(s) saved.`, 'success');
+  if (failed) toast(`${failed} assignment(s) failed.`, 'warning');
+  loadLeaveRequests('approved');
+}
+
+// ── NEW: substitute's own "classes I'm covering" reminder list ────────────
+async function renderMySubstituteDuties(container) {
+  try {
+    const list = await API.get('/leave/substitute-assignments/mine');
+    if (!list.length) return;
+    const box = document.createElement('div');
+    box.className = 'card';
+    box.style.marginBottom = '16px';
+    box.style.borderLeft = '4px solid var(--accent)';
+    box.innerHTML = `
+      <div class="section-title"><i class="fa-solid fa-user-group" style="color:var(--accent);"></i> Classes you're covering</div>
+      ${list.map(a => `
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:.85rem;">
+          Covering for <strong>${escHtml(a.original_faculty_id)}</strong> \u2014
+          ${escHtml(a.course_id||'')} on <strong>${new Date(a.class_date).toLocaleDateString('en-IN')}</strong>.
+          Start it via <em>Go Live \u2192 Extra Class</em> when it's time.
+        </div>`).join('')}`;
+    container.prepend(box);
+  } catch { /* silent — non-critical reminder widget */ }
+}
+
+// ── Student/faculty side: submit + view own requests ──────────────────────
 async function renderStuLeave(c) {
   c.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
   try {
@@ -3803,19 +3904,33 @@ async function checkConflicts() {
     const data = await API.get(`/timetable/conflicts?branch=${encodeURIComponent(branch)}&semester=${encodeURIComponent(sem)}`);
     if (data.total === 0) {
       result.innerHTML = `<div class="alert alert-success" style="margin-bottom:12px;">
-        <i class="fa-solid fa-circle-check"></i> No teacher conflicts found!
+        <i class="fa-solid fa-circle-check"></i> No conflicts found!
       </div>`;
     } else {
+      // NEW: conflicts can now be type "teacher" (same faculty double-
+      // booked) or "room" (two different sections in the same room at
+      // the same time — previously never checked at all).
       result.innerHTML = `<div class="alert alert-warning" style="margin-bottom:12px;">
         <i class="fa-solid fa-triangle-exclamation"></i>
         <strong>${data.total} conflict${data.total>1?'s':''} found!</strong>
-        ${data.conflicts.map(c=>`
-          <div style="margin-top:8px;padding:8px;background:#fff;border-radius:6px;font-size:.82rem;">
-            <strong>${c.teacher}</strong> is assigned to
-            <strong>${c.sections.join(' and ')}</strong>
-            at <strong>${c.day} ${c.time}</strong>
-            (${c.subjects.join(' / ')})
-          </div>`).join('')}
+        ${data.conflicts.map(c=>{
+          if (c.type === 'room') {
+            return `<div style="margin-top:8px;padding:8px;background:#fff;border-radius:6px;font-size:.82rem;">
+              <i class="fa-solid fa-door-open" style="color:var(--accent2);"></i>
+              Room <strong>${escHtml(c.room)}</strong> is double-booked for
+              <strong>${(c.sections||[]).map(escHtml).join(' and ')}</strong>
+              at <strong>${escHtml(c.day)} ${escHtml(c.time)}</strong>
+              (${(c.subjects||[]).map(escHtml).join(' / ')} — ${(c.teachers||[]).map(escHtml).join(' & ')})
+            </div>`;
+          }
+          return `<div style="margin-top:8px;padding:8px;background:#fff;border-radius:6px;font-size:.82rem;">
+            <i class="fa-solid fa-user-clock" style="color:var(--accent2);"></i>
+            <strong>${escHtml(c.teacher)}</strong> is assigned to
+            <strong>${(c.sections||[]).map(escHtml).join(' and ')}</strong>
+            at <strong>${escHtml(c.day)} ${escHtml(c.time)}</strong>
+            (${(c.subjects||[]).map(escHtml).join(' / ')})
+          </div>`;
+        }).join('')}
       </div>`;
     }
     // Auto-clear after 10 seconds
@@ -3992,6 +4107,14 @@ async function renderSettingsPage(c) {
           <option value="false" ${!s.face_required?'selected':''}>No - QR + GPS only</option>
         </select>
       </div>
+      <div class="form-group">
+        <label class="form-label"><i class="fa-solid fa-bell"></i> Auto-notify students when a class goes live?</label>
+        <select class="form-control form-select" id="set_auto_notify">
+          <option value="true" ${s.auto_notify_on_go_live!==false?'selected':''}>Yes - push a notification the instant class starts</option>
+          <option value="false" ${s.auto_notify_on_go_live===false?'selected':''}>No - faculty must notify manually</option>
+        </select>
+        <small style="color:var(--muted);">Requires students to have enabled push notifications in their browser.</small>
+      </div>
       <button class="btn btn-primary" onclick="saveSettings()"><i class="fa-solid fa-save"></i> Save Settings</button>
     </div>`;
 }
@@ -4003,6 +4126,7 @@ async function saveSettings() {
       qr_expiry:     parseInt(document.getElementById('set_qr').value)||45,
       face_required: document.getElementById('set_face').value === 'true',
       inst_name:     document.getElementById('set_inst').value||'TMU',
+      auto_notify_on_go_live: document.getElementById('set_auto_notify').value === 'true',
     });
     toast('Settings saved!','success');
   } catch(e) { toast(e.message,'error'); }
@@ -4186,6 +4310,7 @@ async function facNav(section) {
     defaulters: renderDefaulters,
     flags:      renderFlagsPanel,
     leave:      renderLeavePanel,
+    myleave:    renderStuLeave,
     reports:    renderReports,
     profile:    (c) => renderProfile(c, currentUser),
   };
@@ -4445,6 +4570,10 @@ async function renderFacDashboard(c) {
   window._facSessions   = ss;
   window._facActive     = active;
   window._facSessByDate = sessByDate;
+
+  // NEW: "you're covering X's class today" reminder, if any substitute
+  // assignments exist for this faculty member.
+  renderMySubstituteDuties(c);
 }
 
 function facCalPrev() {
